@@ -1,0 +1,162 @@
+<!DOCTYPE html>
+<html>
+
+<head>
+    <title>Tamagotchi</title>
+    <link href='https://fonts.googleapis.com/css?family=Silkscreen' rel='stylesheet'>
+    <script>
+      var data = [
+        ['A', 'B', 'C'],
+        [1, 2, 3],
+        [4, 5, 6],
+        [7, 8, 9],
+        [10, 11, 12]
+      ]
+      function calculateColor(position, length, alpha) {
+        var hue = 360 * position / length;
+        if (alpha) {
+          return 'hsla(' + hue + ', 100%, 80%, ' + alpha + ')';
+        }
+        return 'hsl(' + hue + ', 100%, 80%)';
+      }
+      function createRow(data, className) {
+        let row = document.createElement('div')
+        row.className = className
+        for (let i = 0; i < data.length; i++) {
+          let cell = document.createElement('div')
+          cell.className = 'td'
+          cell.innerHTML = data[i]
+          row.appendChild(cell)
+        }
+        return row
+      }
+      function display(data) {
+        let table = document.getElementById('table')
+        if (data.length === 0) {
+          table.innerHTML = 'No data'
+          return
+        }
+        table.innerHTML = ''
+        table.appendChild(createRow(data[0], 'th'))
+        data.slice(1, data.length).forEach((rowData, i) => {
+          let row = createRow(rowData, 'tr')
+          let color = calculateColor(i, data.length - 1)
+          row.style.backgroundColor = color
+          row.style.border = '5px solid ' + color
+          table.appendChild(row)
+        })
+      }
+
+      function onSubmit() {
+      }
+
+      function onCancel() {
+        let modal = document.getElementById('modal')
+        modal.style.display = 'none'
+      }
+
+      function showForm() {
+        let modal = document.getElementById('modal')
+        modal.style.display = 'block'
+        modal.style.backgroundColor = calculateColor(Math.random()*360, 360, 0.7)
+      }
+
+      window.addEventListener("DOMContentLoaded", function() {
+        display(data);
+      });
+    </script>
+    <style>
+body {
+  font-family: 'Silkscreen';
+  font-size: xx-large;
+}
+#table{
+  display: table;
+  border-collapse: collapse;
+  width: 100%;
+}
+.th{
+  display: table-row;
+  font-weight: bold;
+  background-color: lavender;
+  border: 5px solid pink;
+  height: 100px;
+}
+.tr{
+  display: table-row;
+  height: 100px;
+}
+.td{
+  display: table-cell;
+  vertical-align: middle;
+}
+input[type='text'], input[type='submit'], input[type='button'] {
+  font-size: xx-large;
+  width: 200px;
+  font-family: 'Silkscreen';
+  margin: 20px;
+  border: 5px solid black;
+}
+input[type='radio'] {
+  height: 30px;
+  width: 30px;
+  margin: 20px;
+}
+label {
+  vertical-align: middle;
+}
+input::placeholder {
+  font-family: 'Silkscreen';
+}
+option {
+  font-family: 'Silkscreen';
+  font-size: 20px;
+}
+.button {
+  border: 5px dashed pink;
+  background-color: lavender;
+  text-align: center;
+  height: 100px;
+}
+.button:hover {
+  background-color: rgb(177, 50, 111);
+  cursor: pointer;
+  color: white;
+}
+#modal {
+  position: fixed;
+  display: none;
+  z-index: 1;
+  top: 0;
+  height: 100%;
+  width: 100%;
+  background-color: #ffc4f8d3;
+}
+#modal #content {
+  display: block;
+  position: relative;
+  width: 300px;
+  margin-top: 100px;
+  margin-left: auto;
+  margin-right: auto;
+}
+    </style>
+</head>
+<body>
+  <div id="table">
+  </div>
+  <div class="button" onclick="showForm()"><p>Add a friend</p></div>
+  <div id="modal">
+    <div id="content">
+      <form>
+        <input type="text" id="name" name="name" placeholder="Patootie"><br>
+        <label><input type="radio" id="address" name="address" value="mac">MAC</label><br>
+        <label><input type="radio" id="address" name="address" value="ip">IP</label><br>
+
+        <input type="submit" value="Submit" onclick="onSubmit()">
+        <input type="button" value="Cancel" onclick="onCancel()">
+      </form>
+    </div>
+  </div>
+</body>
+</html>
