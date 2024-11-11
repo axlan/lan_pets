@@ -4,7 +4,7 @@ from manage_pets.models import PetData
 class LogMessageForm(forms.ModelForm):
     class Meta:
         model = PetData
-        fields = ("name", "identifier_type", "ip_address", "mac_address")
+        fields = ("name", "identifier_type", "mac_address")
 
     def fields_required(self, fields):
         """Used for conditionally marking fields as required."""

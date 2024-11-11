@@ -1,0 +1,277 @@
+<!DOCTYPE html>
+<html>
+
+<head>
+  <title>Tamagotchi</title>
+  <!-- Include Choices CSS -->
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/choices.js/public/assets/styles/choices.min.css" />
+  <!-- Include Choices JavaScript (latest) -->
+  <script src="https://cdn.jsdelivr.net/npm/choices.js/public/assets/scripts/choices.min.js"></script>
+
+
+
+  <link href='https://fonts.googleapis.com/css?family=Silkscreen' rel='stylesheet'>
+  <script>
+    {% autoescape off %}
+    var data1 = [
+      ['Name', 'Status', 'Greeting'],
+      {{friend_rows}}
+    ]
+    {% if router_results_exist %}
+    var data2 = [
+      ["Name", "description", "IP", "MAC"],
+      {{router_rows}}
+    ]
+    {% endif %}
+    {% endautoescape %}
+    function calculateColor(position, length, alpha) {
+      var hue = 360 * position / length;
+      if (alpha) {
+        return 'hsla(' + hue + ', 100%, 80%, ' + alpha + ')';
+      }
+      return 'hsl(' + hue + ', 100%, 80%)';
+    }
+    function createRow(data, className) {
+      let row = document.createElement('div')
+      row.className = className
+      for (let i = 0; i < data.length; i++) {
+        let cell = document.createElement('div')
+        cell.className = 'td'
+        cell.innerHTML = data[i]
+        row.appendChild(cell)
+      }
+      return row
+    }
+    function populate_table(table_target, data) {
+      if (data.length === 0) {
+        table_target.innerHTML = 'No data'
+        return
+      }
+      table_target.innerHTML = ''
+      table_target.appendChild(createRow(data[0], 'th'))
+      data.slice(1, data.length).forEach((rowData, i) => {
+        let row = createRow(rowData, 'tr')
+        let color = calculateColor(i, data.length - 1)
+        row.style.backgroundColor = color
+        row.style.border = '5px solid ' + color
+        row.classList.add('selectable_row');
+    
+        table_target.appendChild(row)
+      })
+    }
+
+    function isMAC(mac_str) {
+      var regex = /^([0-9A-F]{2}[:-]){5}([0-9A-F]{2})$/;
+      return regex.test(mac_str)
+    }
+
+    function onSubmit() {
+      var pet_id = document.getElementById('pet-id')
+      if (!isMAC(pet_id.value)) {
+        alert("MAC address not valid")
+        pet_id.focus()
+        return false
+      }
+      return true
+    }
+
+    function onCancel() {
+      let modal = document.getElementById('modal')
+      modal.style.display = 'none'
+    }
+
+    function showForm() {
+      let modal = document.getElementById('modal')
+      modal.style.display = 'block'
+      modal.style.backgroundColor = calculateColor(Math.random() * 360, 360, 0.7)
+    }
+
+    function setID() {
+      let pet_id = document.getElementById('pet-id')
+      let id_type = document.getElementById('id-type')
+      pet_id.placeholder = id_type.value + " Addr"
+    }
+
+    window.addEventListener("DOMContentLoaded", function () {
+      let table_friends = document.getElementById('table-friends')
+      populate_table(table_friends, data1)
+
+      {% if router_results_exist %}
+      let table_unknown = document.getElementById('table-unknown')
+      populate_table(table_unknown, data2)
+      let rows = table_unknown.getElementsByClassName("tr")
+      for (i = 0; i < rows.length; i++) {
+        var row = rows[i].valueOf();
+        var createClickHandler = function(row) {
+          let mac = row.children[3].innerText
+          let name = ""
+          if (row.children[0].innerText != "?") {
+            name = row.children[0].innerText
+          } else if (row.children[1].innerText != "?") {
+            name = row.children[1].innerText
+          }
+          return function() {
+            let selector = document.getElementById('id-type')
+            let pet_id = document.getElementById('pet-id')
+            let pet_name = document.getElementById('pet-name')
+            selector.value = "MAC"
+            pet_id.value = mac
+            pet_name.value = name
+            showForm()
+          };
+        };
+        row.onclick = createClickHandler(row);
+      }
+      {% endif %}
+    });
+  </script>
+  <style>
+    body {
+      font-family: 'Silkscreen';
+      font-size: xx-large;
+    }
+
+    .table {
+      display: table;
+      border-collapse: collapse;
+      width: 100%;
+    }
+
+    .th {
+      display: table-row;
+      font-weight: bold;
+      background-color: lavender;
+      border: 5px solid pink;
+      height: 100px;
+    }
+
+    .tr {
+      display: table-row;
+      height: 100px;
+    }
+
+    .td {
+      display: table-cell;
+      vertical-align: middle;
+    }
+
+    .choices {
+      width: 200px;
+      font-family: 'Silkscreen';
+      margin: 20px;
+      border: 5px solid black;
+    }
+
+    .choices__inner {
+      padding: 0px;
+    }
+
+    .choices__item {
+      font-family: 'Silkscreen';
+      font-size: xx-large;
+      text-align: center;
+      color: black;
+    }
+
+    .selectable_row:hover {
+      cursor: pointer;
+      color: rgb(255, 32, 80);
+    }
+
+    input[type='text'],
+    input[type='submit'],
+    input[type='button'] {
+      font-size: xx-large;
+      width: 200px;
+      font-family: 'Silkscreen';
+      margin: 20px;
+      border: 5px solid black;
+    }
+
+    input[type='radio'] {
+      height: 30px;
+      width: 30px;
+      margin: 20px;
+    }
+
+    label {
+      vertical-align: middle;
+    }
+
+    input::placeholder {
+      font-family: 'Silkscreen';
+    }
+
+    option {
+      font-family: 'Silkscreen';
+      font-size: 20px;
+    }
+
+    .button {
+      border: 5px dashed pink;
+      background-color: lavender;
+      text-align: center;
+      height: 100px;
+    }
+
+    .button:hover {
+      background-color: rgb(177, 50, 111);
+      cursor: pointer;
+      color: white;
+    }
+
+    #modal {
+      position: fixed;
+      display: none;
+      z-index: 1;
+      top: 0;
+      height: 100%;
+      width: 100%;
+      background-color: #ffc4f8d3;
+    }
+
+    #modal #content {
+      display: block;
+      position: relative;
+      width: 300px;
+      margin-top: 100px;
+      margin-left: auto;
+      margin-right: auto;
+    }
+  </style>
+</head>
+
+<body>
+  <caption>Friends</caption>
+  <div class="table" id="table-friends">
+  </div>
+  <caption>Potential Friends?</caption>
+  <div class="table" id="table-unknown">
+  </div>
+  <div class="button" onclick="showForm()">
+    <p>Add a friend</p>
+  </div>
+  <div id="modal">
+    <div id="content">
+      <form method="post" onSubmit="return onSubmit()">
+        <input type="text" id="pet-name" name="pet-name" placeholder="Name"><br>
+        <select name="id-type" id="id-type" onchange="setID()">
+          <option value="MAC" selected>MAC</option>
+          <option value="Host">Host</option>
+        </select>
+        <input type="text" id="pet-id" name="pet-id" placeholder="MAC Addr"><br>
+
+        <input type="submit" value="Submit">
+        <input type="button" value="Cancel" onclick="onCancel()">
+      </form>
+    </div>
+  </div>
+  <script>
+    // Initialize Choices.js
+    const element = document.getElementById('id-type')
+    const choices = new Choices(element, { searchEnabled: false, itemSelectText: "", shouldSort: false })
+    setID()
+  </script>
+</body>
+
+</html>

@@ -7,17 +7,26 @@ from datetime import datetime
 
 class PetData(models.Model):
     class PrimaryIdentifier(models.TextChoices):
-        IP = 'IP', "IP"
         MAC = 'MAC', "MAC"
-        DNS = 'DNS', "DNS"
+        HOST = 'HOST', "HOST"
         MDNS = 'MDNS', "mDNS"
 
     IDENTIFIER_MAP = {
-        PrimaryIdentifier.IP: "ip_address",
         PrimaryIdentifier.MAC: "mac_address",
-        PrimaryIdentifier.DNS: "TBD",
+        PrimaryIdentifier.HOST: "TBD",
         PrimaryIdentifier.MDNS: "TBD",
     }
+
+    class DeviceType(models.TextChoices):
+        PC = 'PC', "PC"
+        LAPTOP = 'LAPTOP', "Laptop"
+        PHONE = 'PHONE', "Phone"
+        IOT = 'IOT', "IoT"
+        SERVER = 'SERVER', "Server"
+        ROUTER = 'ROUTER', "Router"
+        MEDIA = 'MEDIA', "Media"
+        GAMES = 'GAMES', "Games"
+
 
     name = models.CharField(max_length=64)
     descirption = models.CharField(max_length=1024)
@@ -25,10 +34,8 @@ class PetData(models.Model):
     identifier_type = models.CharField(
         max_length=4,
         choices=PrimaryIdentifier.choices,
-        default=PrimaryIdentifier.IP
+        default=PrimaryIdentifier.MAC
     )
-    ip_address = models.GenericIPAddressField(help_text="Only required if identifier_type is 'IP'.",
-                                              blank=True, null=True)
     mac_address = models.CharField(
         max_length=17,
         unique=True,
