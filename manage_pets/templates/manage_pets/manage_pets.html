@@ -31,18 +31,19 @@
       }
       return 'hsl(' + hue + ', 100%, 80%)';
     }
-    function createRow(data, className) {
+    function createRow(data, className, has_view) {
       let row = document.createElement('div')
       row.className = className
       for (let i = 0; i < data.length; i++) {
         let cell = document.createElement('div')
         cell.className = 'td'
-        cell.innerHTML = data[i]
+        let contents = (has_view && i == 0) ? "<a href=\"/view_pet/"+data[i]+"\">"+data[i]+"</a>" : data[i]
+        cell.innerHTML = contents
         row.appendChild(cell)
       }
       return row
     }
-    function populate_table(table_target, data) {
+    function populate_table(table_target, data, has_view=false) {
       if (data.length === 0) {
         table_target.innerHTML = 'No data'
         return
@@ -50,7 +51,7 @@
       table_target.innerHTML = ''
       table_target.appendChild(createRow(data[0], 'th'))
       data.slice(1, data.length).forEach((rowData, i) => {
-        let row = createRow(rowData, 'tr')
+        let row = createRow(rowData, 'tr', has_view)
         let color = calculateColor(i, data.length - 1)
         row.style.backgroundColor = color
         row.style.border = '5px solid ' + color
@@ -94,14 +95,14 @@
 
     window.addEventListener("DOMContentLoaded", function () {
       let table_friends = document.getElementById('table-friends')
-      populate_table(table_friends, data1)
-
+      populate_table(table_friends, data1, true)
+      let rows = table_friends.getElementsByClassName("tr")
       {% if router_results_exist %}
       let table_unknown = document.getElementById('table-unknown')
       populate_table(table_unknown, data2)
-      let rows = table_unknown.getElementsByClassName("tr")
+      rows = table_unknown.getElementsByClassName("tr")
       for (i = 0; i < rows.length; i++) {
-        var row = rows[i].valueOf();
+        var row = rows[i].valueOf()
         var createClickHandler = function(row) {
           let mac = row.children[3].innerText
           let name = ""

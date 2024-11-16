@@ -77,4 +77,13 @@ def view_pet(request, name):
     if len(matching_objects) == 0:
         return "Not Found"
     else:
-        return matching_objects[0].descirption
+        return render(request, "manage_pets/show_pet.html", {'pet_name': matching_objects[0].name})
+
+@csrf_exempt
+def delete_pet(request, name):
+    matching_objects  = PetData.objects.filter(name__contains=name)
+    for pet in matching_objects:
+        pet.delete()
+    
+    return redirect('/manage_pets')
+

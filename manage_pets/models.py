@@ -29,7 +29,7 @@ class PetData(models.Model):
 
 
     name = models.CharField(max_length=64)
-    descirption = models.CharField(max_length=1024)
+    description = models.CharField(max_length=1024)
     creation_date_date = models.DateTimeField("date created", default=datetime.now)
     identifier_type = models.CharField(
         max_length=4,

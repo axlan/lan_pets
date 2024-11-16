@@ -7,6 +7,7 @@ urlpatterns = [
     path("hello/<name>", views.hello_there, name="hello_there"),
     path("manage_pets", views.manage_pets, name="manage_pets"),
     path("view_pet/<name>", views.view_pet, name="view_pet"),
+    path("delete_pet/<name>", views.delete_pet, name="delete_pet"),
 ]
 
 urlpatterns += staticfiles_urlpatterns()

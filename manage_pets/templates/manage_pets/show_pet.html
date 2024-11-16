@@ -1,0 +1,155 @@
+<!DOCTYPE html>
+<html>
+
+<head>
+  <title>{{pet_name}}</title>
+
+  <link href='https://fonts.googleapis.com/css?family=Silkscreen' rel='stylesheet'>
+  <style>
+    body {
+      font-family: 'Silkscreen';
+      font-size: xx-large;
+    }
+
+    .table {
+      display: table;
+      border-collapse: collapse;
+      width: 100%;
+    }
+
+    .th {
+      display: table-row;
+      font-weight: bold;
+      background-color: lavender;
+      border: 5px solid pink;
+      height: 100px;
+    }
+
+    .tr {
+      display: table-row;
+      height: 100px;
+    }
+
+    .td {
+      display: table-cell;
+      vertical-align: middle;
+    }
+
+    .choices {
+      width: 200px;
+      font-family: 'Silkscreen';
+      margin: 20px;
+      border: 5px solid black;
+    }
+
+    .choices__inner {
+      padding: 0px;
+    }
+
+    .choices__item {
+      font-family: 'Silkscreen';
+      font-size: xx-large;
+      text-align: center;
+      color: black;
+    }
+
+    .selectable_row:hover {
+      cursor: pointer;
+      color: rgb(255, 32, 80);
+    }
+
+    input[type='text'],
+    input[type='submit'],
+    input[type='button'] {
+      font-size: xx-large;
+      width: 200px;
+      font-family: 'Silkscreen';
+      margin: 20px;
+      border: 5px solid black;
+    }
+
+    input[type='radio'] {
+      height: 30px;
+      width: 30px;
+      margin: 20px;
+    }
+
+    label {
+      vertical-align: middle;
+    }
+
+    input::placeholder {
+      font-family: 'Silkscreen';
+    }
+
+    option {
+      font-family: 'Silkscreen';
+      font-size: 20px;
+    }
+
+    .button {
+      border: 5px dashed pink;
+      background-color: lavender;
+      text-align: center;
+      height: 100px;
+    }
+
+    .button:hover {
+      background-color: rgb(177, 50, 111);
+      cursor: pointer;
+      color: white;
+    }
+
+    #modal {
+      position: fixed;
+      display: none;
+      z-index: 1;
+      top: 0;
+      height: 100%;
+      width: 100%;
+      background-color: #ffc4f8d3;
+    }
+
+    #modal #content {
+      display: block;
+      position: relative;
+      width: 300px;
+      margin-top: 100px;
+      margin-left: auto;
+      margin-right: auto;
+    }
+  </style>
+</head>
+
+<script>
+  function onDelete() {
+    if (confirm("Are you sure you want to delete {{pet_name}}?")) {
+      // User clicked OK
+      // Perform the action here
+    } else {
+      // User clicked Cancel
+      // Do nothing or perform an alternate action
+    }
+  }
+</script>
+
+<body>
+    <h1 style="text-align: center;">{{pet_name}}</h1>
+    <div style="border: thick double #32a1ce;float:left;">
+        <h2 >Stats1</h2>
+        <h2 >Stats2</h2>
+    </div>
+
+    <img src="https://art.pixilart.com/08d3c456da1045a.png" width="50%" height="50%" style="display: inline-block;">
+
+    <div style="border: thick double #32a1ce;float:right;">
+        <h2 >Stats3</h2>
+        <h2 >Stats4</h2>
+    </div>
+    <br>
+    <form action="/delete_pet/{{pet_name}}" method="post" onSubmit="return onDelete()">
+      <input type="submit" value="Delete">
+  </form>
+</body>
+
+</html>
