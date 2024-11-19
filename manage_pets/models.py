@@ -1,6 +1,6 @@
 from django.db import models
 from django.core.validators import RegexValidator
-from datetime import datetime
+from django.utils import timezone
 
 # TBD add host names
 # ValidHostnameRegex = "^(([a-zA-Z0-9]|[a-zA-Z0-9][a-zA-Z0-9\-]*[a-zA-Z0-9])\.)*([A-Za-z0-9]|[A-Za-z0-9][A-Za-z0-9\-]*[A-Za-z0-9])$";
@@ -26,15 +26,21 @@ class PetData(models.Model):
         ROUTER = 'ROUTER', "Router"
         MEDIA = 'MEDIA', "Media"
         GAMES = 'GAMES', "Games"
+        OTHER = 'OTHER', "Other"
 
 
     name = models.CharField(max_length=64)
     description = models.CharField(max_length=1024)
-    creation_date_date = models.DateTimeField("date created", default=datetime.now)
+    creation_date_date = models.DateTimeField("date created", default=timezone.now)
     identifier_type = models.CharField(
         max_length=4,
         choices=PrimaryIdentifier.choices,
         default=PrimaryIdentifier.MAC
+    )
+    device_type = models.CharField(
+        max_length=8,
+        choices=DeviceType.choices,
+        default=DeviceType.OTHER
     )
     mac_address = models.CharField(
         max_length=17,

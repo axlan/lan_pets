@@ -256,9 +256,23 @@
     <div id="content">
       <form method="post" onSubmit="return onSubmit()">
         <input type="text" id="pet-name" name="pet-name" placeholder="Name"><br>
+        <label for="html">Identifier Type</label>
         <select name="id-type" id="id-type" onchange="setID()">
           <option value="MAC" selected>MAC</option>
           <option value="Host">Host</option>
+        </select>
+        <label for="html">Device Type</label>
+        <select name="device-type" id="device-type">
+          <option value="OTHER" selected>Other</option>
+          <option value="PC">PC</option>
+          <option value="LAPTOP">Laptop</option>
+          <option value="PHONE">Phone</option>
+          <option value="IOT">IoT</option>
+          <option value="SERVER">Server</option>
+          <option value="ROUTER">Router</option>
+          <option value="MEDIA">Media</option>
+          <option value="GAMES">Games</option>
+          <option value="OTHER">Other</option>
         </select>
         <input type="text" id="pet-id" name="pet-id" placeholder="MAC Addr"><br>
 
@@ -269,8 +283,10 @@
   </div>
   <script>
     // Initialize Choices.js
-    const element = document.getElementById('id-type')
-    const choices = new Choices(element, { searchEnabled: false, itemSelectText: "", shouldSort: false })
+    const id_type_element = document.getElementById('id-type')
+    const id_type_choices = new Choices(id_type_element, { searchEnabled: false, itemSelectText: "", shouldSort: false })
+    const device_type_element = document.getElementById('device-type')
+    const device_type_choices = new Choices(device_type_element, { searchEnabled: false, itemSelectText: "", shouldSort: false })
     setID()
   </script>
 </body>

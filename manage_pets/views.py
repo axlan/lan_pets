@@ -37,10 +37,11 @@ def manage_pets(request):
     if request.method == "POST":
         name = request.POST.get('pet-name')
         id_type = PetData.PrimaryIdentifier[request.POST.get('id-type')]
+        device_type = PetData.DeviceType[request.POST.get('device-type')]
         pet_id = request.POST.get('pet-id')
         logger.info(f'Adding pet [name={name}, id_type={id_type}, id={pet_id}]')
         if id_type == PetData.PrimaryIdentifier.MAC:
-            PetData.objects.create(name=name, identifier_type=id_type, mac_address=pet_id)
+            PetData.objects.create(name=name, identifier_type=id_type, mac_address=pet_id, device_type=device_type)
         else:
             raise NotImplementedError('Only MAC supported.')
 

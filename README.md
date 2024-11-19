@@ -10,6 +10,7 @@ https://vaaibhavsharma.medium.com/unlocking-the-magic-of-single-page-application
 
 
 ```
+python manage.py makemigrations
 python manage.py migrate
 python manage.py runserver
 
