@@ -6,11 +6,12 @@ import sys
 
 from PIL import Image
 
-from mac_lookup import get_vendor_name
+from .mac_lookup import get_vendor_name
 
 _SCRIPT_PATH = Path(__file__).parents[0].resolve()
 _REPO_PATH = Path(__file__).parents[1].resolve()
 _DATA_PATH = _REPO_PATH / 'data'
+
 
 class _ImageEntry(NamedTuple):
     item_id: int
@@ -92,7 +93,6 @@ class AvatarGen:
             ))
         return selections
 
-
     def generate_image(self, out_file: Path, selections: list[Selection] = [], seed: int | float | str | bytes | bytearray | None = None):
         r = random.Random(seed)
         part_selections: list[_ImageEntry] = []
@@ -116,7 +116,8 @@ class AvatarGen:
                     color_id = part.color_ids[selection.color_idx]
                     images = [i for i in images if i.color_id == color_id]
             part_selections.append(r.choice(images))
-        combined_image = Image.open(part_selections[0].img_path).convert("RGBA")
+        combined_image = Image.open(
+            part_selections[0].img_path).convert("RGBA")
         for part in part_selections[1:]:
             foreground = Image.open(part.img_path).convert("RGBA")
             combined_image = Image.alpha_composite(combined_image, foreground)
@@ -124,12 +125,12 @@ class AvatarGen:
         combined_image.save(out_file)
 
 
-def get_pet_avatar(device_type: str, mac_address: str) -> Path:
+def get_pet_avatar(out_dir: Path, device_type: str, mac_address: str) -> Path:
     avatar_file = device_type + '-' + mac_address + '.png'
-    avatar_path = _DATA_PATH / avatar_file
+    avatar_path = out_dir / avatar_file
     if avatar_path.exists():
         return avatar_path
-    
+
     if device_type in ['PC', 'LAPTOP', 'PHONE']:
         avatar_dir = 'bunny'
     elif device_type in ['IOT']:
@@ -149,10 +150,11 @@ def get_pet_avatar(device_type: str, mac_address: str) -> Path:
     if avatar_dir != 'asaha':
         for choice in choices:
             selections.append(Selection(
-            choice.name,
-            item_idx=r.randint(0, choice.item_idx-1) # type: ignore
+                choice.name,
+                item_idx=r.randint(0, choice.item_idx-1),  # type: ignore
+                disable=choice.name=='background'
             ))
-    
+
     generator.generate_image(avatar_path, selections, mac_address)
     return avatar_path
 
@@ -160,14 +162,14 @@ def get_pet_avatar(device_type: str, mac_address: str) -> Path:
 if __name__ == '__main__':
     gen = AvatarGen(Path(sys.argv[1]))
     gen.describe_choices()
-    # gen.generate_image(Path(sys.argv[2]), [
-    #                    Selection('background', item_idx=0, disable=False)])
+    gen.generate_image(Path(sys.argv[2]), [
+                       Selection('background', item_idx=0, disable=False)])
 
-    get_pet_avatar('PC', 'C8-D3-FF-40-FF-13')
-    get_pet_avatar('PC', '00-E0-4C-20-0A-F2')
-    get_pet_avatar('IOT', '64-16-66-A1-D7-82')
-    get_pet_avatar('IOT', '64-16-66-A0-BC-8D')
-    get_pet_avatar('PC', '64-16-66-A1-D7-82')
-    get_pet_avatar('PC', '64-16-66-A0-BC-8D')
-    get_pet_avatar('SERVER', '64-16-66-A1-D7-82')
-    get_pet_avatar('SERVER', '64-16-66-A0-BC-8D')
+    # get_pet_avatar(_DATA_PATH, 'PC', 'C8-D3-FF-40-FF-13')
+    # get_pet_avatar(_DATA_PATH, 'PC', '00-E0-4C-20-0A-F2')
+    # get_pet_avatar(_DATA_PATH, 'IOT', '64-16-66-A1-D7-82')
+    # get_pet_avatar(_DATA_PATH, 'IOT', '64-16-66-A0-BC-8D')
+    # get_pet_avatar(_DATA_PATH, 'PC', '64-16-66-A1-D7-82')
+    # get_pet_avatar(_DATA_PATH, 'PC', '64-16-66-A0-BC-8D')
+    # get_pet_avatar(_DATA_PATH, 'SERVER', '64-16-66-A1-D7-82')
+    # get_pet_avatar(_DATA_PATH, 'SERVER', '64-16-66-A0-BC-8D')

@@ -1,8 +1,9 @@
+{% load static %}
 <!DOCTYPE html>
 <html>
 
 <head>
-  <title>{{pet_name}}</title>
+  <title>{{pet_data.name}}</title>
 
   <link href='https://fonts.googleapis.com/css?family=Silkscreen' rel='stylesheet'>
   <style>
@@ -123,7 +124,7 @@
 
 <script>
   function onDelete() {
-    if (confirm("Are you sure you want to delete {{pet_name}}?")) {
+    if (confirm("Are you sure you want to delete {{pet_data.name}}?")) {
       // User clicked OK
       // Perform the action here
     } else {
@@ -134,20 +135,20 @@
 </script>
 
 <body>
-    <h1 style="text-align: center;">{{pet_name}}</h1>
+    <h1 style="text-align: center;">{{pet_data.name}}</h1>
     <div style="border: thick double #32a1ce;float:left;">
         <h2 >Stats1</h2>
         <h2 >Stats2</h2>
     </div>
 
-    <img src="https://art.pixilart.com/08d3c456da1045a.png" width="50%" height="50%" style="display: inline-block;">
+    <img src="{% static avatar_path %}" width="50%" height="50%" style="display: inline-block;">
 
     <div style="border: thick double #32a1ce;float:right;">
         <h2 >Stats3</h2>
         <h2 >Stats4</h2>
     </div>
     <br>
-    <form action="/delete_pet/{{pet_name}}" method="post" onSubmit="return onDelete()">
+    <form action="/delete_pet/{{pet_data.name}}" method="post" onSubmit="return onDelete()">
       <input type="submit" value="Delete">
   </form>
 </body>

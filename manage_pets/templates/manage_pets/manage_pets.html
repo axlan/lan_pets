@@ -1,3 +1,4 @@
+{% load static %}
 <!DOCTYPE html>
 <html>
 
@@ -14,7 +15,7 @@
   <script>
     {% autoescape off %}
     var data1 = [
-      ['Name', 'Status', 'Greeting'],
+      ['Name', 'Status', 'Greeting', 'Pic'],
       {{friend_rows}}
     ]
     {% if router_results_exist %}
@@ -37,7 +38,15 @@
       for (let i = 0; i < data.length; i++) {
         let cell = document.createElement('div')
         cell.className = 'td'
-        let contents = (has_view && i == 0) ? "<a href=\"/view_pet/"+data[i]+"\">"+data[i]+"</a>" : data[i]
+        let contents = data[i]
+        if (has_view) {
+          if (i == 0) {
+            contents ="<a href=\"/view_pet/"+data[i]+"\">"+data[i]+"</a>"
+          }
+          else if (i == 3){
+            contents ='<img src="/static/' + data[i] + '" width="10%" height="10%" style="display: inline-block;">'
+          }
+        }
         cell.innerHTML = contents
         row.appendChild(cell)
       }

@@ -1,20 +1,22 @@
 import logging
 import os
+from pathlib import Path
 from random import randrange
+import sqlite3
 
 from django.utils.timezone import datetime
 from django.http import HttpResponse
-from django.shortcuts import render
-
-from django.shortcuts import redirect
-from manage_pets.forms import LogMessageForm
-from manage_pets.models import PetData
-from django.http import HttpResponseRedirect
+from django.shortcuts import render, redirect
 from django.views.decorators.csrf import csrf_exempt
 
-import sqlite3
+from manage_pets.forms import LogMessageForm
+from manage_pets.models import PetData
+from avatar_gen.generate_avatar import get_pet_avatar
 
 logger = logging.getLogger(__name__)
+
+_REPO_PATH = Path(__file__).parents[1].resolve()
+_STATIC_PATH = _REPO_PATH / 'data/static'
 
 def home(request):
     return HttpResponse("Hello, Django!")
@@ -51,7 +53,8 @@ def manage_pets(request):
     # '''
     friend_rows = []
     for pet in PetData.objects.iterator():
-        friend_rows.append(f'["{pet.name}", "Happy", "{greetings[randrange(len(greetings))]}"]')
+        avatar_path = get_pet_avatar(_STATIC_PATH, pet.device_type, pet.mac_address)
+        friend_rows.append(f'["{pet.name}", "Happy", "{greetings[randrange(len(greetings))]}", "{avatar_path.name}"]')
     friend_rows = ',\n'.join(friend_rows)
 
     router_db = "data/tp_clients.sqlite3"
@@ -78,7 +81,9 @@ def view_pet(request, name):
     if len(matching_objects) == 0:
         return "Not Found"
     else:
-        return render(request, "manage_pets/show_pet.html", {'pet_name': matching_objects[0].name})
+        pet_data = matching_objects[0]
+        avatar_path = get_pet_avatar(_STATIC_PATH, pet_data.device_type, pet_data.mac_address)
+        return render(request, "manage_pets/show_pet.html", {'pet_data': pet_data, 'avatar_path': avatar_path.name})
 
 @csrf_exempt
 def delete_pet(request, name):
