@@ -1,1 +1,3 @@
 *.sqlite3
+*.png
+!mac_lookup.sqlite3

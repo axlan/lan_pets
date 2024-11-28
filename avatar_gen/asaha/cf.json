@@ -1,0 +1,721 @@
+{
+    "h": 600,
+    "w": 600,
+    "isVMem": 1,
+    "isVSec": 1,
+    "mkrType": 1,
+    "cs": 1,
+    "title": "ドット絵サカバンバスピスメーカー",
+    "desc": "asahaが描きそうなドット絵のサカバンバスピスのアイコンメーカーです。\\r\\nSNSのアイコンなどに使ってOKです！",
+    "pList": [
+        {
+            "pId": 2590098,
+            "pType": 1,
+            "pNm": "body",
+            "isMenu": 1,
+            "thumbUrl": "/app/image_maker/2529042/2590098/p_4CXgT7jK2yz8xBWg.png",
+            "colorCnt": 1,
+            "canMv": 0,
+            "cpId": "l2590098",
+            "isRmv": 0,
+            "x": 0,
+            "y": 0,
+            "angle": 0,
+            "isMX": 0,
+            "isMY": 0,
+            "isRsiz": 0,
+            "isRota": 0,
+            "lyrs": [
+                2865183
+            ],
+            "items": [
+                {
+                    "itmId": 8671042,
+                    "thumbUrl": "/app/image_maker/2529042/2590098/ii_7EfXS90RpeIuUd1j.png",
+                    "typeId": 1
+                },
+                {
+                    "itmId": 8671070,
+                    "thumbUrl": "/app/image_maker/2529042/2590098/ii_aHkMWS8qeP2vI3q0.png",
+                    "typeId": 1
+                },
+                {
+                    "itmId": 8671071,
+                    "thumbUrl": "/app/image_maker/2529042/2590098/ii_9lAsCmiKKNyEbXGl.png",
+                    "typeId": 1
+                },
+                {
+                    "itmId": 8671073,
+                    "thumbUrl": "/app/image_maker/2529042/2590098/ii_dtw8PtceORpr9R0q.png",
+                    "typeId": 1
+                },
+                {
+                    "itmId": 8671072,
+                    "thumbUrl": "/app/image_maker/2529042/2590098/ii_KOC8CET9WmdNeV6j.png",
+                    "typeId": 1
+                },
+                {
+                    "itmId": 8671155,
+                    "thumbUrl": "/app/image_maker/2529042/2590098/ii_0TYEQHPHJjwN4r9C.png",
+                    "typeId": 1
+                },
+                {
+                    "itmId": 8674708,
+                    "thumbUrl": "/app/image_maker/2529042/2590098/ii_lD8hH5HzEQXGIiBR.png",
+                    "typeId": 1
+                },
+                {
+                    "itmId": 8674709,
+                    "thumbUrl": "/app/image_maker/2529042/2590098/ii_mQLVlKWX1JH6OzMv.png",
+                    "typeId": 1
+                },
+                {
+                    "itmId": 8674710,
+                    "thumbUrl": "/app/image_maker/2529042/2590098/ii_lAPAOsKs4aiwbFDg.png",
+                    "typeId": 1
+                },
+                {
+                    "itmId": 8674712,
+                    "thumbUrl": "/app/image_maker/2529042/2590098/ii_EtMzTORwlRBZWjsE.png",
+                    "typeId": 1
+                },
+                {
+                    "itmId": 8674711,
+                    "thumbUrl": "/app/image_maker/2529042/2590098/ii_ce3daPhVKbF1Li7m.png",
+                    "typeId": 1
+                },
+                {
+                    "itmId": 8674713,
+                    "thumbUrl": "/app/image_maker/2529042/2590098/ii_GZKarlclJAKutJKV.png",
+                    "typeId": 1
+                },
+                {
+                    "itmId": 8674714,
+                    "thumbUrl": "/app/image_maker/2529042/2590098/ii_LtJCD7OvZ35fp8Vy.png",
+                    "typeId": 1
+                },
+                {
+                    "itmId": 8671156,
+                    "thumbUrl": "/app/image_maker/2529042/2590098/ii_xTRisXVlksuHfldV.png",
+                    "typeId": 1
+                },
+                {
+                    "itmId": 8671157,
+                    "thumbUrl": "/app/image_maker/2529042/2590098/ii_856ZzijwFLK2N8vQ.png",
+                    "typeId": 1
+                },
+                {
+                    "itmId": 8674715,
+                    "thumbUrl": "/app/image_maker/2529042/2590098/ii_yi192zyz7Pee1Jrw.png",
+                    "typeId": 1
+                }
+            ],
+            "rules": [],
+            "defItmId": 8671042
+        },
+        {
+            "pId": 2590106,
+            "pType": 1,
+            "pNm": "eye",
+            "isMenu": 1,
+            "thumbUrl": "/app/image_maker/2529042/2590106/p_Kh5i85fyIpEhoN9o.png",
+            "colorCnt": 1,
+            "canMv": 0,
+            "cpId": "l2590106",
+            "isRmv": 0,
+            "x": 0,
+            "y": 0,
+            "angle": 0,
+            "isMX": 0,
+            "isMY": 0,
+            "isRsiz": 0,
+            "isRota": 0,
+            "lyrs": [
+                2865192
+            ],
+            "items": [
+                {
+                    "itmId": 8671074,
+                    "thumbUrl": "/app/image_maker/2529042/2590106/ii_I1ON4uKix8Cx1eXN.png",
+                    "typeId": 1
+                },
+                {
+                    "itmId": 8671147,
+                    "thumbUrl": "/app/image_maker/2529042/2590106/ii_nPRaX9ytPpe2wag1.png",
+                    "typeId": 1
+                },
+                {
+                    "itmId": 8671148,
+                    "thumbUrl": "/app/image_maker/2529042/2590106/ii_LGmIhEvebwqeTKXU.png",
+                    "typeId": 1
+                },
+                {
+                    "itmId": 8671149,
+                    "thumbUrl": "/app/image_maker/2529042/2590106/ii_aGKYrGOzDFUN2ch5.png",
+                    "typeId": 1
+                },
+                {
+                    "itmId": 8674723,
+                    "thumbUrl": "/app/image_maker/2529042/2590106/ii_0WrwFtT2lojSHEwz.png",
+                    "typeId": 1
+                },
+                {
+                    "itmId": 8671150,
+                    "thumbUrl": "/app/image_maker/2529042/2590106/ii_zwL0duUyu2ca5jIj.png",
+                    "typeId": 1
+                },
+                {
+                    "itmId": 8674725,
+                    "thumbUrl": "/app/image_maker/2529042/2590106/ii_tPEVQWj8a5tpFyYH.png",
+                    "typeId": 1
+                },
+                {
+                    "itmId": 8671153,
+                    "thumbUrl": "/app/image_maker/2529042/2590106/ii_wsLZQbs3Sm5MVXkr.png",
+                    "typeId": 1
+                },
+                {
+                    "itmId": 8671152,
+                    "thumbUrl": "/app/image_maker/2529042/2590106/ii_vSK1BMNPcMBJdjXb.png",
+                    "typeId": 1
+                },
+                {
+                    "itmId": 8671151,
+                    "thumbUrl": "/app/image_maker/2529042/2590106/ii_R073MqfZeZ20ucr6.png",
+                    "typeId": 1
+                },
+                {
+                    "itmId": 8674721,
+                    "thumbUrl": "/app/image_maker/2529042/2590106/ii_aA3Wgn2HWC7EFFtg.png",
+                    "typeId": 1
+                },
+                {
+                    "itmId": 8674724,
+                    "thumbUrl": "/app/image_maker/2529042/2590106/ii_fsrxoEtEfYwI2geI.png",
+                    "typeId": 1
+                },
+                {
+                    "itmId": 8674722,
+                    "thumbUrl": "/app/image_maker/2529042/2590106/ii_3LcykMNqZevZ0UJA.png",
+                    "typeId": 1
+                },
+                {
+                    "itmId": 8674727,
+                    "thumbUrl": "/app/image_maker/2529042/2590106/ii_smwmUenRxlSFcj1R.png",
+                    "typeId": 1
+                },
+                {
+                    "itmId": 8674726,
+                    "thumbUrl": "/app/image_maker/2529042/2590106/ii_Um1XbH6G8fPlEwOw.png",
+                    "typeId": 1
+                },
+                {
+                    "itmId": 8674728,
+                    "thumbUrl": "/app/image_maker/2529042/2590106/ii_Csg9V801E7mjZV5F.png",
+                    "typeId": 1
+                }
+            ],
+            "rules": [],
+            "defItmId": 8671074
+        },
+        {
+            "pId": 2590136,
+            "pType": 1,
+            "pNm": "mouth",
+            "isMenu": 1,
+            "thumbUrl": "/app/image_maker/2529042/2590136/p_gzNtAaTioGZQip0j.png",
+            "colorCnt": 1,
+            "canMv": 0,
+            "cpId": "l2590136",
+            "isRmv": 0,
+            "x": 0,
+            "y": 0,
+            "angle": 0,
+            "isMX": 0,
+            "isMY": 0,
+            "isRsiz": 0,
+            "isRota": 0,
+            "lyrs": [
+                2865224
+            ],
+            "items": [
+                {
+                    "itmId": 8671159,
+                    "thumbUrl": "/app/image_maker/2529042/2590136/ii_76ZI7xpQCdutHEYY.png",
+                    "typeId": 1
+                },
+                {
+                    "itmId": 8671161,
+                    "thumbUrl": "/app/image_maker/2529042/2590136/ii_04eA4rrN501hWSIe.png",
+                    "typeId": 1
+                },
+                {
+                    "itmId": 8671162,
+                    "thumbUrl": "/app/image_maker/2529042/2590136/ii_SaFXNs4kzFo36IAi.png",
+                    "typeId": 1
+                },
+                {
+                    "itmId": 8671163,
+                    "thumbUrl": "/app/image_maker/2529042/2590136/ii_b7fXzDRo37TwBO5k.png",
+                    "typeId": 1
+                },
+                {
+                    "itmId": 8671164,
+                    "thumbUrl": "/app/image_maker/2529042/2590136/ii_gz373nET7jqbMoi1.png",
+                    "typeId": 1
+                },
+                {
+                    "itmId": 8674741,
+                    "thumbUrl": "/app/image_maker/2529042/2590136/ii_HvSLQUqFSzlEhTiT.png",
+                    "typeId": 1
+                },
+                {
+                    "itmId": 8671165,
+                    "thumbUrl": "/app/image_maker/2529042/2590136/ii_lpUaYh0CDDk3ngRi.png",
+                    "typeId": 1
+                },
+                {
+                    "itmId": 8671166,
+                    "thumbUrl": "/app/image_maker/2529042/2590136/ii_fnDZb0TahWROojkt.png",
+                    "typeId": 1
+                },
+                {
+                    "itmId": 8674734,
+                    "thumbUrl": "/app/image_maker/2529042/2590136/ii_W8KFtOx2ldT8ZWNw.png",
+                    "typeId": 1
+                },
+                {
+                    "itmId": 8674735,
+                    "thumbUrl": "/app/image_maker/2529042/2590136/ii_xTFM8d2YdFp4Zy4w.png",
+                    "typeId": 1
+                },
+                {
+                    "itmId": 8674736,
+                    "thumbUrl": "/app/image_maker/2529042/2590136/ii_CYdaAj3LVwTLD606.png",
+                    "typeId": 1
+                },
+                {
+                    "itmId": 8674738,
+                    "thumbUrl": "/app/image_maker/2529042/2590136/ii_KhtcpHBM9OohqD2d.png",
+                    "typeId": 1
+                },
+                {
+                    "itmId": 8674737,
+                    "thumbUrl": "/app/image_maker/2529042/2590136/ii_6S3lHdozJuVbuv5M.png",
+                    "typeId": 1
+                },
+                {
+                    "itmId": 8671167,
+                    "thumbUrl": "/app/image_maker/2529042/2590136/ii_ekmr1DNEUfJiZley.png",
+                    "typeId": 1
+                },
+                {
+                    "itmId": 8674739,
+                    "thumbUrl": "/app/image_maker/2529042/2590136/ii_FcpBiUNBrKTb7EKa.png",
+                    "typeId": 1
+                },
+                {
+                    "itmId": 8674740,
+                    "thumbUrl": "/app/image_maker/2529042/2590136/ii_uZM6n5fGrCdASPKN.png",
+                    "typeId": 1
+                }
+            ],
+            "rules": [],
+            "defItmId": 8671159
+        },
+        {
+            "pId": 2590142,
+            "pType": 1,
+            "pNm": "eyebrows",
+            "isMenu": 1,
+            "thumbUrl": "/app/image_maker/2529042/2590142/p_YeJBIbrHeY9VRAxE.png",
+            "colorCnt": 1,
+            "canMv": 0,
+            "cpId": "l2590142",
+            "isRmv": 1,
+            "x": 0,
+            "y": 0,
+            "angle": 0,
+            "isMX": 0,
+            "isMY": 0,
+            "isRsiz": 0,
+            "isRota": 0,
+            "lyrs": [
+                2865230
+            ],
+            "items": [
+                {
+                    "itmId": 8671180,
+                    "thumbUrl": "/app/image_maker/2529042/2590142/ii_TCzG0W4soMocXwC4.png",
+                    "typeId": 1
+                },
+                {
+                    "itmId": 8674750,
+                    "thumbUrl": "/app/image_maker/2529042/2590142/ii_g3BGOTsY3TufV6r4.png",
+                    "typeId": 1
+                },
+                {
+                    "itmId": 8671183,
+                    "thumbUrl": "/app/image_maker/2529042/2590142/ii_YuAuew3x51Jeuncz.png",
+                    "typeId": 1
+                },
+                {
+                    "itmId": 8671182,
+                    "thumbUrl": "/app/image_maker/2529042/2590142/ii_UFYmSsAKpCwOzjad.png",
+                    "typeId": 1
+                },
+                {
+                    "itmId": 8674745,
+                    "thumbUrl": "/app/image_maker/2529042/2590142/ii_1B5rUnUp86xuH2Rl.png",
+                    "typeId": 1
+                },
+                {
+                    "itmId": 8671185,
+                    "thumbUrl": "/app/image_maker/2529042/2590142/ii_qjGavz5IFUQSJDxu.png",
+                    "typeId": 1
+                },
+                {
+                    "itmId": 8671186,
+                    "thumbUrl": "/app/image_maker/2529042/2590142/ii_Qh4NAPSSJqWzXrcv.png",
+                    "typeId": 1
+                },
+                {
+                    "itmId": 8671184,
+                    "thumbUrl": "/app/image_maker/2529042/2590142/ii_MjoHHxCpavsft0Fk.png",
+                    "typeId": 1
+                },
+                {
+                    "itmId": 8674746,
+                    "thumbUrl": "/app/image_maker/2529042/2590142/ii_IUvSWtFsyO5Kbmfa.png",
+                    "typeId": 1
+                },
+                {
+                    "itmId": 8671187,
+                    "thumbUrl": "/app/image_maker/2529042/2590142/ii_kQdp2Wv4nahfrDbW.png",
+                    "typeId": 1
+                },
+                {
+                    "itmId": 8674744,
+                    "thumbUrl": "/app/image_maker/2529042/2590142/ii_Dhf3ngtYMh18EqNB.png",
+                    "typeId": 1
+                },
+                {
+                    "itmId": 8674748,
+                    "thumbUrl": "/app/image_maker/2529042/2590142/ii_VdF1EzetnBgOduYp.png",
+                    "typeId": 1
+                },
+                {
+                    "itmId": 8671188,
+                    "thumbUrl": "/app/image_maker/2529042/2590142/ii_ag087JCLWQIVPpAD.png",
+                    "typeId": 1
+                },
+                {
+                    "itmId": 8674749,
+                    "thumbUrl": "/app/image_maker/2529042/2590142/ii_LguIJbtfkgFU4j6z.png",
+                    "typeId": 1
+                },
+                {
+                    "itmId": 8674747,
+                    "thumbUrl": "/app/image_maker/2529042/2590142/ii_Rvg1LABkhawNS86v.png",
+                    "typeId": 1
+                },
+                {
+                    "itmId": 8674751,
+                    "thumbUrl": "/app/image_maker/2529042/2590142/ii_Y9WvaRNtk3yjoiD7.png",
+                    "typeId": 1
+                }
+            ],
+            "rules": [],
+            "defItmId": 0
+        },
+        {
+            "pId": 2591204,
+            "pType": 1,
+            "pNm": "clothes",
+            "isMenu": 1,
+            "thumbUrl": "/app/image_maker/2529042/2591204/p_WcY9oCQyodiOOHAZ.png",
+            "colorCnt": 1,
+            "canMv": 0,
+            "cpId": "l2591204",
+            "isRmv": 1,
+            "x": 0,
+            "y": 0,
+            "angle": 0,
+            "isMX": 0,
+            "isMY": 0,
+            "isRsiz": 0,
+            "isRota": 0,
+            "lyrs": [
+                2866350
+            ],
+            "items": [
+                {
+                    "itmId": 8674818,
+                    "thumbUrl": "/app/image_maker/2529042/2591204/ii_FgVrM9SRls0sVFQ6.png",
+                    "typeId": 1
+                },
+                {
+                    "itmId": 8674820,
+                    "thumbUrl": "/app/image_maker/2529042/2591204/ii_ByHZ0DOZ3EItjrDy.png",
+                    "typeId": 1
+                },
+                {
+                    "itmId": 8674821,
+                    "thumbUrl": "/app/image_maker/2529042/2591204/ii_iGf9MR2zkUurSYTs.png",
+                    "typeId": 1
+                },
+                {
+                    "itmId": 8674824,
+                    "thumbUrl": "/app/image_maker/2529042/2591204/ii_q0av8V1rUZ0aU3ZC.png",
+                    "typeId": 1
+                },
+                {
+                    "itmId": 8674822,
+                    "thumbUrl": "/app/image_maker/2529042/2591204/ii_GBCjKhd1mdYZclF2.png",
+                    "typeId": 1
+                },
+                {
+                    "itmId": 8674823,
+                    "thumbUrl": "/app/image_maker/2529042/2591204/ii_3xYlgruYbOXXDGRZ.png",
+                    "typeId": 1
+                }
+            ],
+            "rules": [],
+            "defItmId": 0
+        },
+        {
+            "pId": 2590139,
+            "pType": 1,
+            "pNm": "mood",
+            "isMenu": 1,
+            "thumbUrl": "/app/image_maker/2529042/2590139/p_djzU9g4iEpAuzmC4.png",
+            "colorCnt": 1,
+            "canMv": 0,
+            "cpId": "l2590139",
+            "isRmv": 1,
+            "x": 0,
+            "y": 0,
+            "angle": 0,
+            "isMX": 0,
+            "isMY": 0,
+            "isRsiz": 0,
+            "isRota": 0,
+            "lyrs": [
+                2865227
+            ],
+            "items": [
+                {
+                    "itmId": 8671170,
+                    "thumbUrl": "/app/image_maker/2529042/2590139/ii_PN6W2n05lglWAxjK.png",
+                    "typeId": 1
+                },
+                {
+                    "itmId": 8671173,
+                    "thumbUrl": "/app/image_maker/2529042/2590139/ii_TgJTA6r5kfxxpS84.png",
+                    "typeId": 1
+                },
+                {
+                    "itmId": 8671172,
+                    "thumbUrl": "/app/image_maker/2529042/2590139/ii_FZCZ5KMGKj5swpFW.png",
+                    "typeId": 1
+                },
+                {
+                    "itmId": 8671174,
+                    "thumbUrl": "/app/image_maker/2529042/2590139/ii_RfGXopbhJivmXvhe.png",
+                    "typeId": 1
+                },
+                {
+                    "itmId": 8671175,
+                    "thumbUrl": "/app/image_maker/2529042/2590139/ii_xSjZatqDjEXKm4G5.png",
+                    "typeId": 1
+                },
+                {
+                    "itmId": 8671176,
+                    "thumbUrl": "/app/image_maker/2529042/2590139/ii_LglWuWIQAfO1j9BF.png",
+                    "typeId": 1
+                },
+                {
+                    "itmId": 8671177,
+                    "thumbUrl": "/app/image_maker/2529042/2590139/ii_y05RHiEm4avbfaXz.png",
+                    "typeId": 1
+                },
+                {
+                    "itmId": 8671178,
+                    "thumbUrl": "/app/image_maker/2529042/2590139/ii_bjrKzT3Ev71TSSRz.png",
+                    "typeId": 1
+                }
+            ],
+            "rules": [],
+            "defItmId": 0
+        },
+        {
+            "pId": 2591201,
+            "pType": 1,
+            "pNm": "exclamation",
+            "isMenu": 1,
+            "thumbUrl": "/app/image_maker/2529042/2591201/p_FCbOCSRGFDIPgdF5.png",
+            "colorCnt": 1,
+            "canMv": 0,
+            "cpId": "l2591201",
+            "isRmv": 1,
+            "x": 0,
+            "y": 0,
+            "angle": 0,
+            "isMX": 0,
+            "isMY": 0,
+            "isRsiz": 0,
+            "isRota": 0,
+            "lyrs": [
+                2866347
+            ],
+            "items": [
+                {
+                    "itmId": 8674804,
+                    "thumbUrl": "/app/image_maker/2529042/2591201/ii_RldlRCswyGpgrJZs.png",
+                    "typeId": 1
+                },
+                {
+                    "itmId": 8674807,
+                    "thumbUrl": "/app/image_maker/2529042/2591201/ii_0lgBlsgScEtEqEtU.png",
+                    "typeId": 1
+                },
+                {
+                    "itmId": 8674817,
+                    "thumbUrl": "/app/image_maker/2529042/2591201/ii_UzfxoiV0Rf9DH1Wg.png",
+                    "typeId": 1
+                },
+                {
+                    "itmId": 8674808,
+                    "thumbUrl": "/app/image_maker/2529042/2591201/ii_V0laCXk1RWHVVTQx.png",
+                    "typeId": 1
+                },
+                {
+                    "itmId": 8674806,
+                    "thumbUrl": "/app/image_maker/2529042/2591201/ii_10SyFO4kMCfg1SBa.png",
+                    "typeId": 1
+                }
+            ],
+            "rules": [],
+            "defItmId": 0
+        }
+    ],
+    "cpList": {
+        "l2590098": [
+            {
+                "cId": 5788435,
+                "cd": "#FFFFFF"
+            }
+        ],
+        "l2590106": [
+            {
+                "cId": 5788464,
+                "cd": "#FFFFFF"
+            }
+        ],
+        "l2590136": [
+            {
+                "cId": 5788545,
+                "cd": "#FFFFFF"
+            }
+        ],
+        "l2590139": [
+            {
+                "cId": 5788548,
+                "cd": "#FFFFFF"
+            }
+        ],
+        "l2590142": [
+            {
+                "cId": 5788551,
+                "cd": "#FFFFFF"
+            }
+        ],
+        "l2591201": [
+            {
+                "cId": 5791065,
+                "cd": "#FFFFFF"
+            }
+        ],
+        "l2591204": [
+            {
+                "cId": 5791082,
+                "cd": "#FFFFFF"
+            }
+        ]
+    },
+    "lyrList": {
+        "2865183": 1,
+        "2865192": 4,
+        "2865224": 2,
+        "2865227": 3,
+        "2865230": 5,
+        "2866347": 7,
+        "2866350": 6
+    },
+    "zeroConf": {
+        "2590098": {
+            "itmId": 8671042,
+            "cId": 5788435,
+            "xCnt": 0,
+            "yCnt": 0,
+            "spCnt": 0,
+            "sNo": 0,
+            "rotaCnt": 0
+        },
+        "2590106": {
+            "itmId": 8671074,
+            "cId": 5788464,
+            "xCnt": 0,
+            "yCnt": 0,
+            "spCnt": 0,
+            "sNo": 0,
+            "rotaCnt": 0
+        },
+        "2590136": {
+            "itmId": 8671159,
+            "cId": 5788545,
+            "xCnt": 0,
+            "yCnt": 0,
+            "spCnt": 0,
+            "sNo": 0,
+            "rotaCnt": 0
+        },
+        "2590139": {
+            "itmId": 0,
+            "cId": 5788548,
+            "xCnt": 0,
+            "yCnt": 0,
+            "spCnt": 0,
+            "sNo": 0,
+            "rotaCnt": 0
+        },
+        "2590142": {
+            "itmId": 0,
+            "cId": 5788551,
+            "xCnt": 0,
+            "yCnt": 0,
+            "spCnt": 0,
+            "sNo": 0,
+            "rotaCnt": 0
+        },
+        "2591201": {
+            "itmId": 0,
+            "cId": 5791065,
+            "xCnt": 0,
+            "yCnt": 0,
+            "spCnt": 0,
+            "sNo": 0,
+            "rotaCnt": 0
+        },
+        "2591204": {
+            "itmId": 0,
+            "cId": 5791082,
+            "xCnt": 0,
+            "yCnt": 0,
+            "spCnt": 0,
+            "sNo": 0,
+            "rotaCnt": 0
+        }
+    },
+    "ruleList": {}
+}
