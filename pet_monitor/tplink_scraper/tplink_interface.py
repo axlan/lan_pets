@@ -3,7 +3,7 @@ import requests
 import urllib.parse
 
 from Crypto.PublicKey import RSA
-from custom_rsa import new
+from pet_monitor.tplink_scraper.custom_rsa import new
 
 
 class TPLinkInterface:
