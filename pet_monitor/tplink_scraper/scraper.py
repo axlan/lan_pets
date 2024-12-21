@@ -1,7 +1,6 @@
 from collections import defaultdict
 import sqlite3
 import os
-import json
 from pathlib import Path
 import urllib.parse
 import time
@@ -9,7 +8,7 @@ from typing import NamedTuple, Optional
 
 
 from pet_monitor.constants import DATA_DIR
-from pet_monitor.settings import TPLinkSettings, get_settings
+from pet_monitor.settings import TPLinkSettings, get_settings, RateLimiter
 from pet_monitor.tplink_scraper.tplink_interface import TPLinkInterface
 
 
@@ -61,15 +60,27 @@ def create_database_from_schema(db_path):
         conn.close()
 
 
-class TPLinkScraper:
+class TPLinkScraper():
     def __init__(self, settings: TPLinkSettings) -> None:
         self.settings = settings
+        self.rate_limiter = RateLimiter(settings.update_period_sec)
         self.db_path = DATA_DIR / 'tp_clients.sqlite3'
 
         if not os.path.exists(self.db_path):
             create_database_from_schema(self.db_path)
 
-    def scrape_new_data(self):
+    def load_ips(self, mac_addresses:list[str]) -> list[tuple[str, str]]:
+        with sqlite3.connect(self.db_path) as conn:
+            cur = conn.cursor()
+            place_holders = ', '.join(['?'] * len(mac_addresses))
+            QUERY = f"SELECT mac, ip FROM client_info WHERE mac IN ({place_holders})"
+            cur.execute(QUERY, tuple(m for m in mac_addresses))
+            return [record for record in cur.fetchall()]
+
+    def update(self) -> bool:
+        if not self.rate_limiter.get_ready():
+            return True
+
         try:
             tplink = TPLinkInterface(
                 self.settings.router_ip, self.settings.username, self.settings.password)
@@ -78,8 +89,7 @@ class TPLinkScraper:
             traffic = tplink.get_traffic_stats()
         except Exception as e:
             print(e)
-            time.sleep(60)
-            return
+            return False
 
         with sqlite3.connect(self.db_path) as conn:
             devices = defaultdict(dict)
@@ -155,6 +165,7 @@ class TPLinkScraper:
             print(f'num_traffic: {num_traffic}')
             print(f'num_connected: {num_connected}')
             print(f'num_total: {num_total}')
+            return True
 
 
 def main():
@@ -166,8 +177,8 @@ def main():
 
     try:
         while True:
-            scraper.scrape_new_data()
-            time.sleep(settings.update_period_sec)
+            scraper.update()
+            time.sleep(1)
     except KeyboardInterrupt:
         pass
 

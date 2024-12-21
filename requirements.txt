@@ -2,3 +2,4 @@ Django
 requests
 pandas
 Pillow
+icmplib
