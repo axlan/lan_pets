@@ -1,4 +1,5 @@
 from collections import defaultdict
+import io
 import sqlite3
 import os
 from pathlib import Path
@@ -7,6 +8,8 @@ import urllib.parse
 from typing import NamedTuple, Optional
 
 import pandas as pd
+import plotly.graph_objects as go
+from plotly.subplots import make_subplots
 
 from pet_monitor.constants import DATA_DIR
 from pet_monitor.settings import TPLinkSettings, get_settings, RateLimiter
@@ -78,15 +81,32 @@ class TPLinkScraper():
         if not os.path.exists(self.db_path):
             create_database_from_schema(self.db_path)
 
-    def load_ips(self, mac_addresses:list[str]) -> list[tuple[str, str]]:
+    def load_ips(self, mac_addresses: list[str]) -> list[tuple[str, str]]:
         with sqlite3.connect(self.db_path) as conn:
             cur = conn.cursor()
             place_holders = ', '.join(['?'] * len(mac_addresses))
-            QUERY = f"SELECT mac, ip FROM client_info WHERE mac IN ({place_holders})"
+            QUERY = f"SELECT mac, ip FROM client_info WHERE mac IN ({
+                place_holders})"
             cur.execute(QUERY, tuple(m for m in mac_addresses))
             return [record for record in cur.fetchall()]
 
-    def _load_bps_df(self, mac_addresses:list[str], since_timestamp:Optional[float]=None) -> pd.DataFrame:
+    def load_info(self, mac_addresses: Optional[list[str]] = None) -> dict[str, ClientInfo]:
+        info = {}
+        with sqlite3.connect(self.db_path) as conn:
+            cur = conn.cursor()
+            QUERY = "SELECT * FROM client_info"
+            if mac_addresses is not None:
+                place_holders = ', '.join(['?'] * len(mac_addresses))
+                QUERY += f" WHERE mac IN ({place_holders});"
+                cur.execute(QUERY, tuple(m for m in mac_addresses))
+            else:
+                cur.execute(QUERY+';')
+            for record in cur.fetchall():
+                client = ClientInfo(*record)
+                info[client.mac] = client
+        return info
+
+    def _load_bps_df(self, mac_addresses: list[str], since_timestamp: Optional[float] = None) -> pd.DataFrame:
         with sqlite3.connect(self.db_path) as conn:
             MAC_STRS = ','.join([f'"{m}"' for m in mac_addresses])
             QUERY = f"""
@@ -105,7 +125,7 @@ class TPLinkScraper():
         df.dropna(inplace=True)
         return df
 
-    def load_bps(self, mac_addresses:list[str], since_timestamp:Optional[float]=None) -> dict[str, list[TrafficStats]]:
+    def load_bps(self, mac_addresses: list[str], since_timestamp: Optional[float] = None) -> dict[str, pd.DataFrame]:
         results = {}
         df = self._load_bps_df(mac_addresses, since_timestamp)
         for mac in mac_addresses:
@@ -118,11 +138,36 @@ class TPLinkScraper():
                 mac_df.loc[:, bps_col] /= durations
                 mac_df.loc[mac_df.index[0], bps_col] = 0
                 mac_df.loc[mac_df[bps_col] < 0, bps_col] = 0
-            results[mac] = list(mac_df.itertuples(index=False, name='TrafficStats'))
+            results[mac] = mac_df
         return results
     
+    def generate_traffic_plot(self, mac_address: str, since_timestamp: Optional[float] = None, sample_rate='1h') -> bytes:
+        df = self.load_bps([mac_address], since_timestamp=since_timestamp)[mac_address]
+        df['timestamp'] = pd.to_datetime(df['timestamp'], unit='s')
+        df.set_index('timestamp', inplace=True)
+        df = df.resample(sample_rate).mean()
+        x = df.index.values
+        y1 = df['rx_bytes_bps']
+        y2 = df['tx_bytes_bps']
 
-    def load_mean_bps(self, mac_addresses:list[str], since_timestamp:Optional[float]=None) -> dict[str, TrafficStats]:
+        # Create figure with secondary y-axis
+        fig = make_subplots(specs=[[{"secondary_y": True}]])
+
+        # Add traces
+        fig.add_trace(go.Scatter(x=x, y=y1, name="Recieved",  mode='markers'), secondary_y=False)
+        fig.add_trace(go.Scatter(x=x, y=y2, name="Transmitted",  mode='markers'), secondary_y=True)
+
+        # Set y-axes titles
+        fig.update_yaxes(title_text="<b>Recieved Bytes/Second</b>", type="log", secondary_y=False)
+        fig.update_yaxes(title_text="<b>Transmitted Bytes/Second</b>", type="log", secondary_y=True)
+
+        fd = io.BytesIO()
+        fig.write_image(fd, format='webp')
+        fd.seek(0)
+        return fd.read()
+
+
+    def load_mean_bps(self, mac_addresses: list[str], since_timestamp: Optional[float] = None) -> dict[str, TrafficStats]:
         results = {}
         df = self._load_bps_df(mac_addresses, since_timestamp)
         for mac in mac_addresses:
@@ -131,6 +176,7 @@ class TPLinkScraper():
             metrics['timestamp'] = mac_df['timestamp'].iloc[-1]
             durations = mac_df['timestamp'].diff()
             # For metric calculation, remove periods where collection wasn't running, or device was disconnected.
+            # type: ignore
             no_gaps = durations[durations < self.settings.update_period_sec * 2].index # type: ignore
             durations = durations[no_gaps]
             for col in ['rx_bytes', 'tx_bytes']:
@@ -141,7 +187,6 @@ class TPLinkScraper():
                 metrics[col] = diffs.sum()
             results[mac] = TrafficStats(**metrics)
         return results
-
 
     def update(self) -> bool:
         if not self.rate_limiter.get_ready():
@@ -248,8 +293,14 @@ def main():
     # except KeyboardInterrupt:
     #     pass
 
-    results = scraper.load_mean_bps(['E2-2D-4F-4F-4F-0B', '10-E8-A7-CA-84-BB'])
-    print(results)
+    print(scraper.load_mean_bps(['E2-2D-4F-4F-4F-0B', '10-E8-A7-CA-84-BB']))
+
+    # df = scraper.load_bps(['E2-2D-4F-4F-4F-0B'])['E2-2D-4F-4F-4F-0B']
+    # from plotly import express as px
+    # fig = px.line(df, x='timestamp', y=['rx_bytes_bps', 'tx_bytes_bps'])
+    # fig.write_image("/tmp/traffic.png")
+
+
 
 
 if __name__ == '__main__':

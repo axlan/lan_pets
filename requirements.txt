@@ -4,3 +4,5 @@ pandas
 Pillow
 icmplib
 pycryptodome
+plotly_express
+kaleido

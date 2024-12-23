@@ -1,8 +1,8 @@
 import logging
-import os
 from pathlib import Path
 from random import randrange
-import sqlite3
+import base64
+import time
 
 from django.utils.timezone import datetime
 from django.http import HttpResponse
@@ -12,11 +12,24 @@ from django.views.decorators.csrf import csrf_exempt
 from manage_pets.forms import LogMessageForm
 from manage_pets.models import PetData
 from avatar_gen.generate_avatar import get_pet_avatar
+from pet_monitor.settings import get_settings
+from pet_monitor.tplink_scraper.scraper import ClientInfo, TPLinkScraper, TrafficStats
+from pet_monitor.ping import Pinger
+from pet_monitor.pet_ai import PetAi
+
 
 logger = logging.getLogger(__name__)
 
 _REPO_PATH = Path(__file__).parents[1].resolve()
 _STATIC_PATH = _REPO_PATH / 'data/static'
+
+_MONITOR_SETTINGS = get_settings()
+
+tplink_scraper = None if _MONITOR_SETTINGS.tplink_settings is None else TPLinkScraper(_MONITOR_SETTINGS.tplink_settings)
+if tplink_scraper is None:
+    raise NotImplementedError('TPLinkScraper currently required.')
+pinger = Pinger(_MONITOR_SETTINGS.pinger_settings)
+pet_ai = PetAi(_MONITOR_SETTINGS.pet_ai_settings)
 
 def home(request):
     return HttpResponse("Hello, Django!")
@@ -57,21 +70,18 @@ def manage_pets(request):
         friend_rows.append(f'["{pet.name}", "Happy", "{greetings[randrange(len(greetings))]}", "{avatar_path.name}"]')
     friend_rows = ',\n'.join(friend_rows)
 
-    router_db = "data/tp_clients.sqlite3"
-    router_results_exist = False
+    # Format scraper results into JS table.
+    router_results_exist = True
     router_rows = ''
-    if os.path.exists(router_db):
-        # Read sqlite query results into a pandas DataFrame
-        with sqlite3.connect(router_db) as con:
-            cur = con.cursor()
-            cur.execute("SELECT client_name, description, ip, mac FROM client_info")
-            rows = []
-            for record in cur.fetchall():
-                values = ['"?"' if r is None else f'"{r}"' for r in record]
-                values = ",".join(values)
-                rows.append(f'[{values}]')
-        router_rows = ',\n'.join(rows)
-        router_results_exist = True
+    rows = []
+    tp_link_info = tplink_scraper.load_info() # type: ignore 
+    for info in tp_link_info.values():
+        record = [info.client_name, info.description, info.ip, info.mac]
+        values = ['"?"' if r is None else f'"{r}"' for r in record]
+        values = ",".join(values)
+        rows.append(f'[{values}]')
+    router_rows = ',\n'.join(rows)
+    router_results_exist = True
 
     return render(request, "manage_pets/manage_pets.html", {'friend_rows': friend_rows, "router_results_exist": router_results_exist, "router_rows": router_rows})
 
@@ -83,7 +93,17 @@ def view_pet(request, name):
     else:
         pet_data = matching_objects[0]
         avatar_path = get_pet_avatar(_STATIC_PATH, pet_data.device_type, pet_data.mac_address)
-        return render(request, "manage_pets/show_pet.html", {'pet_data': pet_data, 'avatar_path': avatar_path.name})
+        assert tplink_scraper is not None
+        history_start_time = time.time() - _MONITOR_SETTINGS.pet_ai_settings.history_window_sec
+        tp_link_info = tplink_scraper.load_info([pet_data.mac_address]).get(pet_data.mac_address, ClientInfo('Unknown'))
+        tp_link_traffic_info = tplink_scraper.load_mean_bps([pet_data.mac_address]).get(pet_data.mac_address, TrafficStats(0, 0,0,0,0))
+        traffic_data_webp = base64.b64encode(tplink_scraper.generate_traffic_plot(pet_data.mac_address, since_timestamp=history_start_time)).decode('utf-8')
+
+        return render(request, "manage_pets/show_pet.html", {'pet_data': pet_data,
+                                                             'router_info': tp_link_info,
+                                                             'traffic_info': tp_link_traffic_info,
+                                                             'traffic_data_webp': traffic_data_webp,
+                                                             'avatar_path': avatar_path.name,})
 
 @csrf_exempt
 def delete_pet(request, name):

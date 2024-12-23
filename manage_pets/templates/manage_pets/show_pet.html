@@ -137,16 +137,22 @@
 <body>
     <h1 style="text-align: center;">{{pet_data.name}}</h1>
     <div style="border: thick double #32a1ce;float:left;">
-        <h2 >Stats1</h2>
-        <h2 >Stats2</h2>
+        <h2 >MAC</h2>
+        <p>{{router_info.mac}}</p>
+        <h2 >IP</h2>
+        <p>{{router_info.ip}}</p>
     </div>
 
     <img src="{% static avatar_path %}" width="50%" height="50%" style="display: inline-block;">
 
     <div style="border: thick double #32a1ce;float:right;">
-        <h2 >Stats3</h2>
-        <h2 >Stats4</h2>
+        <h2 >Transmit Rate</h2>
+        <p>{{traffic_info.rx_bytes_bps|floatformat:"0"}} (B/s)</p>
+        <h2 >Transmit Rate</h2>
+        <p>{{traffic_info.tx_bytes_bps|floatformat:"0"}} (B/s)</p>
     </div>
+    <br>
+    <img src="data:image/png;base64, {{traffic_data_webp}}" alt="Traffic Data Plot" />
     <br>
     <form action="/delete_pet/{{pet_data.name}}" method="post" onSubmit="return onDelete()">
       <input type="submit" value="Delete">
