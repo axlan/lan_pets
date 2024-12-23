@@ -2,10 +2,11 @@ from collections import defaultdict
 import sqlite3
 import os
 from pathlib import Path
-import urllib.parse
 import time
+import urllib.parse
 from typing import NamedTuple, Optional
 
+import pandas as pd
 
 from pet_monitor.constants import DATA_DIR
 from pet_monitor.settings import TPLinkSettings, get_settings, RateLimiter
@@ -21,6 +22,14 @@ class ClientInfo(NamedTuple):
     ip: Optional[str] = None
     client_name: Optional[str] = None
     description: Optional[str] = None
+
+
+class TrafficStats(NamedTuple):
+    rx_bytes: float
+    tx_bytes: float
+    timestamp: int
+    rx_bytes_bps: float
+    tx_bytes_bps: float
 
 
 SCHEMA_SQL = '''\
@@ -76,6 +85,63 @@ class TPLinkScraper():
             QUERY = f"SELECT mac, ip FROM client_info WHERE mac IN ({place_holders})"
             cur.execute(QUERY, tuple(m for m in mac_addresses))
             return [record for record in cur.fetchall()]
+
+    def _load_bps_df(self, mac_addresses:list[str], since_timestamp:Optional[float]=None) -> pd.DataFrame:
+        with sqlite3.connect(self.db_path) as conn:
+            MAC_STRS = ','.join([f'"{m}"' for m in mac_addresses])
+            QUERY = f"""
+            SELECT i.mac, t.rx_bytes, t.tx_bytes, t.timestamp
+            FROM client_traffic t
+            JOIN client_info i
+            ON t.client_id = i.rowid
+            WHERE i.mac in ({MAC_STRS}) AND t.is_connected = 1"""
+
+            if since_timestamp is not None:
+                QUERY += f' AND t.timestamp >= {since_timestamp}'
+
+            QUERY += ';'
+
+            df = pd.read_sql(QUERY, conn)
+        df.dropna(inplace=True)
+        return df
+
+    def load_bps(self, mac_addresses:list[str], since_timestamp:Optional[float]=None) -> dict[str, list[TrafficStats]]:
+        results = {}
+        df = self._load_bps_df(mac_addresses, since_timestamp)
+        for mac in mac_addresses:
+            mac_df = df[df['mac'] == mac].dropna().copy()
+            mac_df.drop(columns=['mac'], inplace=True)
+            durations = mac_df['timestamp'].diff()
+            for col in ['rx_bytes', 'tx_bytes']:
+                bps_col = f'{col}_bps'
+                mac_df.loc[:, bps_col] = mac_df[col].diff()
+                mac_df.loc[:, bps_col] /= durations
+                mac_df.loc[mac_df.index[0], bps_col] = 0
+                mac_df.loc[mac_df[bps_col] < 0, bps_col] = 0
+            results[mac] = list(mac_df.itertuples(index=False, name='TrafficStats'))
+        return results
+    
+
+    def load_mean_bps(self, mac_addresses:list[str], since_timestamp:Optional[float]=None) -> dict[str, TrafficStats]:
+        results = {}
+        df = self._load_bps_df(mac_addresses, since_timestamp)
+        for mac in mac_addresses:
+            mac_df = df[df['mac'] == mac].dropna()
+            metrics = {}
+            metrics['timestamp'] = mac_df['timestamp'].iloc[-1]
+            durations = mac_df['timestamp'].diff()
+            # For metric calculation, remove periods where collection wasn't running, or device was disconnected.
+            no_gaps = durations[durations < self.settings.update_period_sec * 2].index # type: ignore
+            durations = durations[no_gaps]
+            for col in ['rx_bytes', 'tx_bytes']:
+                bps_col = f'{col}_bps'
+                diffs = mac_df[col].diff()[no_gaps]
+                diffs = diffs[diffs >= 0]
+                metrics[bps_col] = (diffs / durations).mean()
+                metrics[col] = diffs.sum()
+            results[mac] = TrafficStats(**metrics)
+        return results
+
 
     def update(self) -> bool:
         if not self.rate_limiter.get_ready():
@@ -175,12 +241,15 @@ def main():
         return
     scraper = TPLinkScraper(settings)
 
-    try:
-        while True:
-            scraper.update()
-            time.sleep(1)
-    except KeyboardInterrupt:
-        pass
+    # try:
+    #     while True:
+    #         scraper.update()
+    #         time.sleep(1)
+    # except KeyboardInterrupt:
+    #     pass
+
+    results = scraper.load_mean_bps(['E2-2D-4F-4F-4F-0B', '10-E8-A7-CA-84-BB'])
+    print(results)
 
 
 if __name__ == '__main__':

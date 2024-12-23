@@ -2,12 +2,12 @@ from concurrent.futures import ThreadPoolExecutor
 import os
 from pathlib import Path
 import sqlite3
-from typing import NamedTuple
+from typing import Iterable, NamedTuple
 
 from icmplib import ping
 
 from pet_monitor.constants import DATA_DIR
-from pet_monitor.settings import PingerSettings, RateLimiter
+from pet_monitor.settings import PingerSettings, RateLimiter, get_settings
 
 
 class PingerItem(NamedTuple):
@@ -56,6 +56,39 @@ class Pinger:
         if not os.path.exists(self.db_path):
             create_database_from_schema(self.db_path)
 
+    def load_availability(self, names:Iterable[str]) -> dict[str, float]:
+        availability = {}
+        with sqlite3.connect(self.db_path) as conn:
+            cur = conn.cursor()
+            for name in names:
+                cur.execute(
+                    """
+                    SELECT SUM(r.is_connected) / COUNT(*) * 100 ConnectedPct
+                    FROM ping_results r
+                    JOIN ping_names n
+                    ON r.name_id = n.rowid
+                    WHERE n.name=?;""", (name,))
+                result = cur.fetchone()
+                availability[name] = 0.0 if result[0] is None else result[0]
+        return availability
+
+    def get_history_len(self, names:Iterable[str]) -> dict[str, int]:
+        availability = {}
+        with sqlite3.connect(self.db_path) as conn:
+            cur = conn.cursor()
+            for name in names:
+                cur.execute(
+                    """
+                    SELECT max(r.timestamp) - min(r.timestamp) HistoryAge
+                    FROM ping_names n
+                    JOIN ping_results r
+                    ON r.name_id = n.rowid
+                    WHERE n.name=?
+                    LIMIT 1;""", (name,))
+                result = cur.fetchone()
+                availability[name] = 0.0 if result[0] is None else result[0]
+        return availability
+
     @staticmethod
     def _check_host(pet: PingerItem, db_path: Path) -> None:
         is_up = False
@@ -92,3 +125,17 @@ class Pinger:
         with ThreadPoolExecutor() as executor:
             futures = [executor.submit(
                 self._check_host, pet, self.db_path) for pet in pets]
+
+def main():
+    settings = get_settings().pinger_settings
+    if settings is None:
+        print("Pinger settings not found.")
+        return
+    pinger = Pinger(settings)
+
+    #print(pinger.load_availability(['zephyrus', 'Thermo']))
+    print(pinger.get_history_len(['zephyrus', 'Thermo']))
+
+
+if __name__ == '__main__':
+    main()

@@ -14,7 +14,8 @@ python manage.py makemigrations
 python manage.py migrate
 python manage.py runserver
 
-python tplink_scraper/scraper.py
+python -m pet_monitor.pet_monitor_service
+
 
 ```
 

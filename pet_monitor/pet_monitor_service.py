@@ -15,6 +15,7 @@ os.environ.setdefault("DJANGO_SETTINGS_MODULE", "lan_pets.settings")
 apps.populate(INSTALLED_APPS)
 from manage_pets.models import PetData
 
+from pet_monitor.pet_ai import MoodAttributes, PetAi
 from pet_monitor.settings import get_settings
 from pet_monitor.ping import Pinger, PingerItem
 from pet_monitor.tplink_scraper.scraper import TPLinkScraper
@@ -26,7 +27,8 @@ def main():
     if tplink_scraper is None:
         raise NotImplementedError('TPLinkScraper currently required.')
     pinger = Pinger(settings.pinger_settings)
-    
+    pet_ai = PetAi(settings.pet_ai_settings)
+
     try:
         while True:
             # Load data for pets added on web page.
@@ -47,6 +49,19 @@ def main():
             pinger_items = [PingerItem(name=name, hostname=ip) for name, ip in ip_map.items()]
             pinger.update(pinger_items)
 
+            mood_data = {}
+            pet_availability = pinger.load_availability(pet_data.keys())
+            histort_len = pinger.get_history_len(pet_data.keys())
+            traffic_stats = tplink_scraper.load_mean_bps(macs)
+            for pet in pet_data.values():
+                mood_data[pet.name] = MoodAttributes(
+                    rx_bps=traffic_stats[pet.mac_address].rx_bytes_bps,
+                    tx_bps=traffic_stats[pet.mac_address].tx_bytes_bps,
+                    availability=pet_availability[pet.name],
+                    history_len_sec=histort_len[pet.name]
+                )
+            
+            pet_ai.update(mood_data)
 
 
     except KeyboardInterrupt:

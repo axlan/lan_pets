@@ -8,6 +8,22 @@ class PingerSettings(NamedTuple):
     update_period_sec = 10.0
 
 
+class PetAISettings(NamedTuple):
+    update_period_sec = 60.0
+
+    # Mood parameters.
+    history_window_sec = 60.0*60.0*24.0*7.0
+    uptime_ratio_for_available = 0.5
+    average_bytes_per_sec_for_loud = 500
+
+    # Interaction parameters.
+    prob_message = 0.5
+    prob_message_friend = 0.75
+    prob_make_friend = 0.1
+    prob_make_friend_per_friend_drop = 0.01
+    prob_lose_friend = 0.02
+
+
 class TPLinkSettings(NamedTuple):
     router_ip: str
     username: str
@@ -16,9 +32,10 @@ class TPLinkSettings(NamedTuple):
 
 
 class Settings(NamedTuple):
-    tplink_settings: Optional[TPLinkSettings]
+    tplink_settings: Optional[TPLinkSettings] = None
     main_loop_update_period_sec = 1.0
     pinger_settings = PingerSettings()
+    pet_ai_settings = PetAISettings()
 
 
 class RateLimiter:
