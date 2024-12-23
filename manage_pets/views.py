@@ -1,4 +1,5 @@
 import logging
+import os
 from pathlib import Path
 from random import randrange
 import base64
@@ -22,6 +23,7 @@ logger = logging.getLogger(__name__)
 
 _REPO_PATH = Path(__file__).parents[1].resolve()
 _STATIC_PATH = _REPO_PATH / 'data/static'
+os.makedirs(_STATIC_PATH, exist_ok=True)
 
 _MONITOR_SETTINGS = get_settings()
 

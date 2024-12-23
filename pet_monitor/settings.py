@@ -33,7 +33,7 @@ class TPLinkSettings(NamedTuple):
 
 class Settings(NamedTuple):
     tplink_settings: Optional[TPLinkSettings] = None
-    main_loop_update_period_sec = 1.0
+    main_loop_sleep_sec = 0.1
     pinger_settings = PingerSettings()
     pet_ai_settings = PetAISettings()
 
@@ -41,14 +41,17 @@ class Settings(NamedTuple):
 class RateLimiter:
     def __init__(self, update_period_sec) -> None:
         self.update_period_sec = update_period_sec
-        self.last_update = 0.0
+        self.last_update = float('-inf')
 
     def get_ready(self) -> bool:
-        now = time.monotonic()
-        if time.monotonic() - self.last_update < self.update_period_sec:
+        if not self.is_ready():
             return False
-        self.last_update = now
-        return True
+        else:
+            self.last_update = time.monotonic()
+            return True
+
+    def is_ready(self) -> bool:
+        return time.monotonic() - self.last_update > self.update_period_sec 
 
 
 def get_settings() -> Settings:
