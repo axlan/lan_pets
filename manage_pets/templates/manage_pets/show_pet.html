@@ -63,7 +63,7 @@
     input[type='submit'],
     input[type='button'] {
       font-size: xx-large;
-      width: 200px;
+      width: 400px;
       font-family: 'Silkscreen';
       margin: 20px;
       border: 5px solid black;
@@ -151,12 +151,22 @@
         <h2 >Transmit Rate</h2>
         <p>{{traffic_info.tx_bytes_bps|floatformat:"0"}} (B/s)</p>
     </div>
+    <h1 style="text-align: center;">Description</h1>
+    <form action="/edit_pet/{{pet_data.name}}">
+      <input type="submit" value="Edit Description">
+    </form>
+    <div style="border:1px solid black;">
+    {% autoescape off %}
+    {{pet_data.description}}
+    {% endautoescape %}
+    </div>
     <br>
+    <h1 style="text-align: center;">Traffic</h1>
     <img src="data:image/png;base64, {{traffic_data_webp}}" alt="Traffic Data Plot" />
     <br>
     <form action="/delete_pet/{{pet_data.name}}" method="post" onSubmit="return onDelete()">
       <input type="submit" value="Delete">
-  </form>
+    </form>
 </body>
 
 </html>

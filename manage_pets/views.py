@@ -32,6 +32,7 @@ if tplink_scraper is None:
     raise NotImplementedError('TPLinkScraper currently required.')
 pinger = Pinger(_MONITOR_SETTINGS.pinger_settings)
 pet_ai = PetAi(_MONITOR_SETTINGS.pet_ai_settings)
+greetings = [line.strip() for line in open('data/greetings.txt').readlines()]
 
 def home(request):
     return HttpResponse("Hello, Django!")
@@ -47,7 +48,6 @@ def hello_there(request, name):
     else:
         return render(request, "manage_pets/hello_there.html", {"form": form})
 
-greetings = [line.strip() for line in open('data/greetings.txt').readlines()]
 
 @csrf_exempt
 def manage_pets(request):
@@ -89,7 +89,7 @@ def manage_pets(request):
 
 @csrf_exempt
 def view_pet(request, name):
-    matching_objects  = PetData.objects.filter(name__contains=name)
+    matching_objects  = PetData.objects.filter(name__exact=name)
     if len(matching_objects) == 0:
         return "Not Found"
     else:
@@ -109,9 +109,22 @@ def view_pet(request, name):
 
 @csrf_exempt
 def delete_pet(request, name):
-    matching_objects  = PetData.objects.filter(name__contains=name)
+    matching_objects  = PetData.objects.filter(name__exact=name)
     for pet in matching_objects:
         pet.delete()
     
     return redirect('/manage_pets')
 
+def edit_pet(request, name):
+    matching_objects  = PetData.objects.filter(name__exact=name)
+    if len(matching_objects) == 0:
+        return "Not Found"
+    else:
+        pet_data = matching_objects[0]
+        if request.method == "POST":
+            description = request.POST.get('pet-description')
+            pet_data.description = description
+            pet_data.save()
+            return redirect("/view_pet/" + name)
+        else:
+            return render(request, "manage_pets/edit_pet.html", {'pet_data': pet_data})
