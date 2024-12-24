@@ -65,7 +65,8 @@ def main():
                     mood_data[pet.name] = MoodAttributes(
                         rx_bps=traffic_stats[pet.mac_address].rx_bytes_bps,
                         tx_bps=traffic_stats[pet.mac_address].tx_bytes_bps,
-                        availability=pet_availability[pet.name],
+                        on_line=pet_availability[pet.name][0],
+                        availability=pet_availability[pet.name][1],
                         history_len_sec=histort_len[pet.name]
                     )
                 

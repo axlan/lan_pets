@@ -56,20 +56,34 @@ class Pinger:
         if not os.path.exists(self.db_path):
             create_database_from_schema(self.db_path)
 
-    def load_availability(self, names:Iterable[str]) -> dict[str, float]:
+    def load_availability(self, names:Iterable[str]) -> dict[str, tuple[bool, float]]:
         availability = {}
         with sqlite3.connect(self.db_path) as conn:
             cur = conn.cursor()
             for name in names:
                 cur.execute(
                     """
-                    SELECT SUM(r.is_connected) / COUNT(*) * 100 ConnectedPct
+                    SELECT CAST(SUM(r.is_connected) AS FLOAT) / COUNT(*) * 100 ConnectedPct
                     FROM ping_results r
                     JOIN ping_names n
                     ON r.name_id = n.rowid
                     WHERE n.name=?;""", (name,))
                 result = cur.fetchone()
-                availability[name] = 0.0 if result[0] is None else result[0]
+                print(result)
+                up_ratio = 0.0 if result[0] is None else result[0]
+                cur.execute(
+                    """
+                    SELECT r.is_connected
+                    FROM ping_results r
+                    JOIN ping_names n
+                    ON r.name_id = n.rowid
+                    WHERE n.name=?
+                    ORDER BY r.timestamp DESC
+                    LIMIT 1;""", (name,))
+                result = cur.fetchone()
+                is_online = False if result[0] is None else result[0]
+                availability[name] = tuple((is_online, up_ratio))
+
         return availability
 
     def get_history_len(self, names:Iterable[str]) -> dict[str, int]:
@@ -133,8 +147,8 @@ def main():
         return
     pinger = Pinger(settings)
 
-    #print(pinger.load_availability(['zephyrus', 'Thermo']))
-    print(pinger.get_history_len(['zephyrus', 'Thermo']))
+    print(pinger.load_availability(['zephyrus', 'Nest-Hello-5b0c']))
+    #print(pinger.get_history_len(['zephyrus', 'Thermo']))
 
 
 if __name__ == '__main__':

@@ -12,6 +12,7 @@ from pet_monitor.settings import PetAISettings, RateLimiter
 class MoodAttributes(NamedTuple):
     rx_bps: float
     tx_bps: float
+    on_line: bool
     availability: float
     history_len_sec: float
 
