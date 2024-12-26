@@ -69,7 +69,6 @@ class Pinger:
                     ON r.name_id = n.rowid
                     WHERE n.name=?;""", (name,))
                 result = cur.fetchone()
-                print(result)
                 up_ratio = 0.0 if result[0] is None else result[0]
                 cur.execute(
                     """
