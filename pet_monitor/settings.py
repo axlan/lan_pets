@@ -34,6 +34,8 @@ class TPLinkSettings(NamedTuple):
 class Settings(NamedTuple):
     tplink_settings: Optional[TPLinkSettings] = None
     main_loop_sleep_sec = 0.1
+    plot_timezone = 'America/Los_Angeles'
+    plot_data_window_sec = 60.0*60.0*24.0*7.0
     pinger_settings = PingerSettings()
     pet_ai_settings = PetAISettings()
 

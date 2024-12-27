@@ -1,9 +1,12 @@
 from concurrent.futures import ThreadPoolExecutor
+import io
 import os
 from pathlib import Path
 import sqlite3
-from typing import Iterable, NamedTuple
+from typing import Iterable, NamedTuple, Optional
 
+import pandas as pd
+import plotly_express as px
 from icmplib import ping
 
 from pet_monitor.constants import DATA_DIR
@@ -56,8 +59,38 @@ class Pinger:
         if not os.path.exists(self.db_path):
             create_database_from_schema(self.db_path)
 
-    def load_availability(self, names:Iterable[str]) -> dict[str, tuple[bool, float]]:
-        availability = {}
+    def load_current_availability(self, names:Iterable[str]) -> dict[str, bool]:
+        results = {n: False for n in names}
+        with sqlite3.connect(self.db_path) as conn:
+            cur = conn.cursor()
+            cur.execute(
+                """
+                SELECT n.name, r.is_connected
+                FROM ping_results r
+                JOIN ping_names n
+                ON r.name_id = n.rowid
+                WHERE r.timestamp =(
+                    SELECT MAX(timestamp)
+                    FROM ping_results r2
+                    WHERE r.name_id = r2.name_id
+                );""")
+            results.update({r[0]: bool(r[1]) for r in cur.fetchall()})
+        return results
+
+    def load_availability(self, names:Iterable[str], since_timestamp=0.0) -> pd.DataFrame:
+        with sqlite3.connect(self.db_path) as conn:
+            NAME_STRS = ','.join([f'"{n}"' for n in names])
+            QUERY = f"""
+                SELECT n.name, r.is_connected, r.timestamp
+                FROM ping_results r
+                JOIN ping_names n
+                ON r.name_id = n.rowid
+                WHERE r.timestamp > {since_timestamp} AND n.name IN ({NAME_STRS});"""
+        print(QUERY)
+        return pd.read_sql(QUERY, conn)
+
+    def load_availability_mean(self, names:Iterable[str], since_timestamp=0.0) -> dict[str, float]:
+        availability = {n: 0.0 for n in names}
         with sqlite3.connect(self.db_path) as conn:
             cur = conn.cursor()
             for name in names:
@@ -67,23 +100,26 @@ class Pinger:
                     FROM ping_results r
                     JOIN ping_names n
                     ON r.name_id = n.rowid
-                    WHERE n.name=?;""", (name,))
+                    WHERE r.timestamp > ? AND n.name=?;""", (since_timestamp, name))
                 result = cur.fetchone()
-                up_ratio = 0.0 if result[0] is None else result[0]
-                cur.execute(
-                    """
-                    SELECT r.is_connected
-                    FROM ping_results r
-                    JOIN ping_names n
-                    ON r.name_id = n.rowid
-                    WHERE n.name=?
-                    ORDER BY r.timestamp DESC
-                    LIMIT 1;""", (name,))
-                result = cur.fetchone()
-                is_online = False if result[0] is None else result[0]
-                availability[name] = tuple((is_online, up_ratio))
+                if result[0] is not None:
+                    availability[name] = result[0]
 
         return availability
+
+    def generate_uptime_plot(self, name: str, since_timestamp=0.0, time_zone='America/Los_Angeles') -> bytes:
+        df = self.load_availability([name], since_timestamp)
+        df = df[(df['name'] == name)]
+        df['timestamp'] = pd.to_datetime(df['timestamp'], unit='s', utc=True).dt.tz_convert(time_zone)
+
+        fig = px.line(df, x='timestamp', y="is_connected", line_shape='hv')
+        fig.update_traces(mode='lines+markers')
+        #fig.write_image('/tmp/pings.png')
+
+        fd = io.BytesIO()
+        fig.write_image(fd, format='webp')
+        fd.seek(0)
+        return fd.read()
 
     def get_history_len(self, names:Iterable[str]) -> dict[str, int]:
         availability = {}
@@ -146,7 +182,9 @@ def main():
         return
     pinger = Pinger(settings)
 
-    print(pinger.load_availability(['zephyrus', 'Nest-Hello-5b0c']))
+    #print(pinger.load_availability(['bee', 'Nest-Hello-5b0c']))
+    pinger.generate_uptime_plot('bee')
+    
     #print(pinger.get_history_len(['zephyrus', 'Thermo']))
 
 
