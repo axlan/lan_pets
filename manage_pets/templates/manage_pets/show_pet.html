@@ -141,15 +141,23 @@
         <p>{{router_info.mac}}</p>
         <h2 >IP</h2>
         <p>{{router_info.ip}}</p>
+        <h2 >Percent Uptime</h2>
+        <p>{{mean_uptime}}</p>
+        <h2 >Transmit Rate</h2>
+        <p>{{traffic_info.rx_bytes_bps|floatformat:"0"}} (B/s)</p>
+        <h2 >Transmit Rate</h2>
+        <p>{{traffic_info.tx_bytes_bps|floatformat:"0"}} (B/s)</p>
     </div>
 
     <img src="{% static avatar_path %}" width="50%" height="50%" style="display: inline-block;">
 
     <div style="border: thick double #32a1ce;float:right;">
-        <h2 >Transmit Rate</h2>
-        <p>{{traffic_info.rx_bytes_bps|floatformat:"0"}} (B/s)</p>
-        <h2 >Transmit Rate</h2>
-        <p>{{traffic_info.tx_bytes_bps|floatformat:"0"}} (B/s)</p>
+        <h2 >Mood</h2>
+        <p>{{mood}}</p>
+        <h2 >Relationships</h2>
+        {% for name, relationship in relationships.items %} 
+          <li><a href="/view_pet/{{name}}">{{name}} - {{relationship}}</a></li>
+        {% endfor %}
     </div>
     <h1 style="text-align: center;">Description</h1>
     <form action="/edit_pet/{{pet_data.name}}">

@@ -86,7 +86,6 @@ class Pinger:
                 JOIN ping_names n
                 ON r.name_id = n.rowid
                 WHERE r.timestamp > {since_timestamp} AND n.name IN ({NAME_STRS});"""
-        print(QUERY)
         return pd.read_sql(QUERY, conn)
 
     def load_availability_mean(self, names:Iterable[str], since_timestamp=0.0) -> dict[str, float]:

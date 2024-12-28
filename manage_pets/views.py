@@ -99,13 +99,20 @@ def view_pet(request, name):
         history_start_time = time.time() - _MONITOR_SETTINGS.plot_data_window_sec
         tp_link_info = tplink_scraper.load_info([pet_data.mac_address]).get(pet_data.mac_address, ClientInfo('Unknown'))
         tp_link_traffic_info = tplink_scraper.load_mean_bps([pet_data.mac_address]).get(pet_data.mac_address, TrafficStats(0, 0,0,0,0))
+        mean_uptime=pinger.load_availability_mean([pet_data.name], since_timestamp=history_start_time).get(pet_data.name)
+        relationships = pet_ai.get_relationships([pet_data.name])[pet_data.name]
+        relationships = {n:m.name for n, m in relationships.items()}
+        mood = pet_ai.get_moods([pet_data.name])[pet_data.name]
         up_time_webp = base64.b64encode(pinger.generate_uptime_plot(pet_data.name, since_timestamp=history_start_time)).decode('utf-8')
         traffic_data_webp = base64.b64encode(tplink_scraper.generate_traffic_plot(pet_data.mac_address, since_timestamp=history_start_time)).decode('utf-8')
 
         return render(request, "manage_pets/show_pet.html", {'pet_data': pet_data,
                                                              'router_info': tp_link_info,
+                                                             'mood': mood.name,
+                                                             'relationships': relationships,
                                                              'traffic_info': tp_link_traffic_info,
                                                              'traffic_data_webp': traffic_data_webp,
+                                                             'mean_uptime': mean_uptime,
                                                              'up_time_webp': up_time_webp,
                                                              'avatar_path': avatar_path.name,})
 

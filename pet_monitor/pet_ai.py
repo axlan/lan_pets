@@ -77,6 +77,20 @@ class PetAi:
         if not os.path.exists(self.db_path):
             create_database_from_schema(self.db_path)
 
+    def get_moods(self, names: Iterable[str]) -> dict[str, Moods]:
+        moods = {n:Moods.HAPPY for n in names}
+        with sqlite3.connect(self.db_path) as conn:
+            cur = conn.cursor()
+            NAME_STRS = ','.join([f'"{n}"' for n in names])
+            QUERY = f"""
+                SELECT name, mood
+                FROM pet_moods
+                WHERE name IN ({NAME_STRS});"""
+            cur.execute(QUERY)
+            for r in cur.fetchall():
+                moods[r[0]] = Moods(r[1])
+        return moods
+
     def get_relationships(self, names: Iterable[str]) -> dict[str, dict[str, Relationships]]:
         relationships = defaultdict(dict)
         with sqlite3.connect(self.db_path) as conn:

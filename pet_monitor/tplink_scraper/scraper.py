@@ -141,9 +141,9 @@ class TPLinkScraper():
             results[mac] = mac_df
         return results
     
-    def generate_traffic_plot(self, mac_address: str, since_timestamp: Optional[float] = None, sample_rate='1h') -> bytes:
+    def generate_traffic_plot(self, mac_address: str, since_timestamp: Optional[float] = None, sample_rate='1h', time_zone='America/Los_Angeles') -> bytes:
         df = self.load_bps([mac_address], since_timestamp=since_timestamp)[mac_address]
-        df['timestamp'] = pd.to_datetime(df['timestamp'], unit='s')
+        df['timestamp'] = pd.to_datetime(df['timestamp'], unit='s', utc=True).dt.tz_convert(time_zone)
         df.set_index('timestamp', inplace=True)
         df = df.resample(sample_rate).mean()
         x = df.index.values
