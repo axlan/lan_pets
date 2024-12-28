@@ -91,6 +91,19 @@ class PetAi:
                 moods[r[0]] = Moods(r[1])
         return moods
 
+    def get_all_relationships(self) -> set[tuple[str, str, Relationships]]:
+        with sqlite3.connect(self.db_path) as conn:
+            cur = conn.cursor()
+            cur.execute(
+                """
+                SELECT name1.name, name2.name, relationship
+                FROM pet_relationships
+                JOIN pet_moods name1
+                ON name1.rowid = name1_id
+                JOIN pet_moods name2
+                ON name2.rowid = name2_id;""")
+            return {(r[0], r[1], Relationships(r[2])) for r in cur.fetchall()}
+
     def get_relationships(self, names: Iterable[str]) -> dict[str, dict[str, Relationships]]:
         relationships = defaultdict(dict)
         with sqlite3.connect(self.db_path) as conn:

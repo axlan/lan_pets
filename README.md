@@ -27,3 +27,6 @@ TODO:
 Identifiers, host, MAC, mDNS?
 Figure out sensors for each device (ping, http, custom, SNMP)
 Any way to better abstract the router info dump?
+Make it work when router scraper isn't available
+Add header with links to manage pets and relationships
+Add more stuff to relationship view, like moods as a color with legend

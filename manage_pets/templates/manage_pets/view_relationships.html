@@ -1,0 +1,58 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <title>Pet Relationships</title>
+    <!-- https://visjs.github.io/vis-network/examples/  -->
+    <script
+      type="text/javascript"
+      src="https://cdnjs.cloudflare.com/ajax/libs/vis-network/9.1.9/standalone/umd/vis-network.min.js"
+    ></script>
+
+    <style type="text/css">
+      #mynetwork {
+        width: 600px;
+        height: 400px;
+        border: 1px solid lightgray;
+      }
+    </style>
+  </head>
+  <body>
+    <div id="mynetwork"></div>
+
+    <h2 id="eventSpanHeading"></h2>
+    <pre id="eventSpanContent"></pre>
+
+    <script type="text/javascript">
+      // create an array with nodes
+      var nodes = new vis.DataSet([
+      {% for name, mood in pet_data %} 
+        { id: "{{name}}", label: "{{name}}", title: "{{mood}}" },
+      {% endfor %}
+      ]);
+
+      // create an array with edges
+      var edges = new vis.DataSet([
+      {% for relationship in relationships %}
+        { from: "{{relationship.0}}", to: "{{relationship.1}}", label: "{{relationship.2}}" },
+      {% endfor %}
+      ]);
+
+      // create a network
+      var container = document.getElementById("mynetwork");
+      var data = {
+        nodes: nodes,
+        edges: edges,
+      };
+
+      var options = {
+      };
+
+      var network = new vis.Network(container, data, options);
+
+      network.on("click", function (params) {
+        let pet_name = params.nodes[0]
+        window.location = '/view_pet/'+pet_name
+      });
+    </script>
+  </body>
+</html>

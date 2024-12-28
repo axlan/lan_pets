@@ -87,6 +87,15 @@ def manage_pets(request):
 
     return render(request, "manage_pets/manage_pets.html", {'friend_rows': friend_rows, "router_results_exist": router_results_exist, "router_rows": router_rows})
 
+def view_relationships(request):
+    names = {pet.name for pet in PetData.objects.iterator()}
+    relationships = pet_ai.get_all_relationships()
+    pet_data = {(n, pet_ai.get_moods(names)[n].name.lower()) for n in names}
+    relationships = {(r[0], r[1], r[2].name.lower()) for r in relationships}
+    return render(request, "manage_pets/view_relationships.html", {'pet_data':pet_data,
+                                                         'relationships': relationships,})
+
+
 @csrf_exempt
 def view_pet(request, name):
     matching_objects  = PetData.objects.filter(name__exact=name)
