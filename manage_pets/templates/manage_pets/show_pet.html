@@ -142,7 +142,7 @@
         <h2 >IP</h2>
         <p>{{router_info.ip}}</p>
         <h2 >Percent Uptime</h2>
-        <p>{{mean_uptime}}</p>
+        <p>{{mean_uptime|floatformat:"1"}}%</p>
         <h2 >Transmit Rate</h2>
         <p>{{traffic_info.rx_bytes_bps|floatformat:"0"}} (B/s)</p>
         <h2 >Transmit Rate</h2>
