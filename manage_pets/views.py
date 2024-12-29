@@ -27,12 +27,15 @@ os.makedirs(_STATIC_PATH, exist_ok=True)
 
 _MONITOR_SETTINGS = get_settings()
 
-tplink_scraper = None if _MONITOR_SETTINGS.tplink_settings is None else TPLinkScraper(_MONITOR_SETTINGS.tplink_settings)
-if tplink_scraper is None:
-    raise NotImplementedError('TPLinkScraper currently required.')
-pinger = Pinger(_MONITOR_SETTINGS.pinger_settings)
-pet_ai = PetAi(_MONITOR_SETTINGS.pet_ai_settings)
 greetings = [line.strip() for line in open('data/greetings.txt').readlines()]
+
+
+def _load_client_info(tplink_scraper):
+    tp_link_info = _MONITOR_SETTINGS.hard_coded_client_info()
+    if tplink_scraper:
+        tp_link_info.update(tplink_scraper.load_info())
+    return tp_link_info
+
 
 def home(request):
     return HttpResponse("Hello, Django!")
@@ -73,22 +76,24 @@ def manage_pets(request):
     friend_rows = ',\n'.join(friend_rows)
 
     # Format scraper results into JS table.
-    router_results_exist = True
+    tplink_scraper = None if _MONITOR_SETTINGS.tplink_settings is None else TPLinkScraper(_MONITOR_SETTINGS.tplink_settings)
+    router_results_exist = tplink_scraper is not None or len(_MONITOR_SETTINGS.hard_coded_clients) > 0
     router_rows = ''
-    rows = []
-    tp_link_info = tplink_scraper.load_info() # type: ignore 
-    for info in tp_link_info.values():
-        record = [info.client_name, info.description, info.ip, info.mac]
-        values = ['"?"' if r is None else f'"{r}"' for r in record]
-        values = ",".join(values)
-        rows.append(f'[{values}]')
-    router_rows = ',\n'.join(rows)
-    router_results_exist = True
+    if router_results_exist:
+        rows = []
+        tp_link_info = _load_client_info(tplink_scraper)
+        for info in tp_link_info.values():
+            record = [info.client_name, info.description, info.ip, info.mac]
+            values = ['"?"' if r is None else f'"{r}"' for r in record]
+            values = ",".join(values)
+            rows.append(f'[{values}]')
+        router_rows = ',\n'.join(rows)
 
     return render(request, "manage_pets/manage_pets.html", {'friend_rows': friend_rows, "router_results_exist": router_results_exist, "router_rows": router_rows})
 
 def view_relationships(request):
     names = {pet.name for pet in PetData.objects.iterator()}
+    pet_ai = PetAi(_MONITOR_SETTINGS.pet_ai_settings)
     relationships = pet_ai.get_all_relationships()
     pet_data = {(n, pet_ai.get_moods(names)[n].name.lower()) for n in names}
     relationships = {(r[0], r[1], r[2].name.lower()) for r in relationships}
@@ -102,18 +107,24 @@ def view_pet(request, name):
     if len(matching_objects) == 0:
         return "Not Found"
     else:
+        pinger = Pinger(_MONITOR_SETTINGS.pinger_settings)
+        pet_ai = PetAi(_MONITOR_SETTINGS.pet_ai_settings)
+        tplink_scraper = None if _MONITOR_SETTINGS.tplink_settings is None else TPLinkScraper(_MONITOR_SETTINGS.tplink_settings)
         pet_data = matching_objects[0]
         avatar_path = get_pet_avatar(_STATIC_PATH, pet_data.device_type, pet_data.mac_address)
-        assert tplink_scraper is not None
         history_start_time = time.time() - _MONITOR_SETTINGS.plot_data_window_sec
-        tp_link_info = tplink_scraper.load_info([pet_data.mac_address]).get(pet_data.mac_address, ClientInfo('Unknown'))
-        tp_link_traffic_info = tplink_scraper.load_mean_bps([pet_data.mac_address]).get(pet_data.mac_address, TrafficStats(0, 0,0,0,0))
+        tp_link_info = _load_client_info(tplink_scraper).get(pet_data.mac_address, ClientInfo('Unknown'))
+        if tplink_scraper is None:
+            tp_link_traffic_info = TrafficStats(0,0,0,0,0)
+            traffic_data_webp = base64.b64encode(open(_STATIC_PATH / 'no_data.webp', 'rb').read()).decode('utf-8')
+        else:
+            tp_link_traffic_info = tplink_scraper.load_mean_bps([pet_data.mac_address]).get(pet_data.mac_address, TrafficStats(0, 0,0,0,0))
+            traffic_data_webp = base64.b64encode(tplink_scraper.generate_traffic_plot(pet_data.mac_address, since_timestamp=history_start_time)).decode('utf-8')
         mean_uptime=pinger.load_availability_mean([pet_data.name], since_timestamp=history_start_time).get(pet_data.name)
         relationships = pet_ai.get_relationships([pet_data.name])[pet_data.name]
         relationships = {n:m.name for n, m in relationships.items()}
         mood = pet_ai.get_moods([pet_data.name])[pet_data.name]
         up_time_webp = base64.b64encode(pinger.generate_uptime_plot(pet_data.name, since_timestamp=history_start_time)).decode('utf-8')
-        traffic_data_webp = base64.b64encode(tplink_scraper.generate_traffic_plot(pet_data.mac_address, since_timestamp=history_start_time)).decode('utf-8')
 
         return render(request, "manage_pets/show_pet.html", {'pet_data': pet_data,
                                                              'router_info': tp_link_info,

@@ -3,6 +3,8 @@
 import time
 from typing import NamedTuple, Optional
 
+from pet_monitor.common import ClientInfo
+
 
 class PingerSettings(NamedTuple):
     update_period_sec = 10.0
@@ -33,11 +35,29 @@ class TPLinkSettings(NamedTuple):
 
 class Settings(NamedTuple):
     tplink_settings: Optional[TPLinkSettings] = None
+    hard_coded_clients: set[ClientInfo] = {
+        ClientInfo(
+            mac='44-AF-28-12-11-E6',
+            ip='192.168.1.88',
+            client_name='Zephurus'
+        ),
+        ClientInfo(
+            mac='1A-F3-51-12-36-EB',
+            ip='192.168.1.86',
+            client_name='Pixel 8'
+        ),
+    }
     main_loop_sleep_sec = 0.1
     plot_timezone = 'America/Los_Angeles'
     plot_data_window_sec = 60.0*60.0*24.0*7.0
     pinger_settings = PingerSettings()
     pet_ai_settings = PetAISettings()
+
+    def hard_coded_client_info(self) -> dict[str, ClientInfo]:
+        return {c.mac: c for c in self.hard_coded_clients}
+
+    def hard_coded_mac_ip_map(self) -> set[tuple[str, str]]:
+        return { (c.mac, c.ip) for c in self.hard_coded_clients if c.ip is not None}
 
 
 class RateLimiter:

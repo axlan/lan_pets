@@ -8,35 +8,21 @@ import pandas as pd
 import plotly.graph_objects as go
 from plotly.subplots import make_subplots
 
-from pet_monitor.common import DATA_DIR, get_db_connection
+from pet_monitor.common import DATA_DIR, get_db_connection, ClientInfo, TrafficStats
 from pet_monitor.settings import TPLinkSettings, get_settings, RateLimiter
 from pet_monitor.tplink_scraper.tplink_interface import TPLinkInterface
 
 
-class ClientInfo(NamedTuple):
-    mac: str
-    is_reserved: int = 0
-    ip: Optional[str] = None
-    client_name: Optional[str] = None
-    description: Optional[str] = None
-
-
-class TrafficStats(NamedTuple):
-    rx_bytes: float
-    tx_bytes: float
-    timestamp: int
-    rx_bytes_bps: float
-    tx_bytes_bps: float
-
-
 SCHEMA_SQL = '''\
 CREATE TABLE client_info (
+    row_id INTEGER NOT NULL,
     mac VARCHAR(17) NOT NULL,               -- MAC address (format: XX-XX-XX-XX-XX-XX)
     is_reserved BOOLEAN DEFAULT FALSE,      -- Does device have static IP
     ip VARCHAR(15),                         -- IP address (format: IPv4). NULL if not available.
     client_name VARCHAR(255),               -- Name of the client
     description VARCHAR(255),               -- Additional information about the client
-    UNIQUE (mac)                            -- Ensure MAC addresses are unique
+    UNIQUE (mac),                            -- Ensure MAC addresses are unique
+    PRIMARY KEY(row_id)
 );
 
 CREATE TABLE client_traffic (
@@ -45,7 +31,7 @@ CREATE TABLE client_traffic (
     rx_bytes INT,                  -- Bytes received since monitor reset
     tx_bytes INT,                  -- Bytes sent since monitor
     timestamp INTEGER DEFAULT (strftime('%s', 'now')), -- Unix time of observation
-    FOREIGN KEY(client_id) REFERENCES client_info(rowid)
+    FOREIGN KEY(client_id) REFERENCES client_info(row_id) ON DELETE CASCADE
 );
 '''
 
@@ -56,13 +42,13 @@ class TPLinkScraper():
         self.rate_limiter = RateLimiter(settings.update_period_sec)
         self.conn = get_db_connection(DATA_DIR / 'tp_clients.sqlite3', SCHEMA_SQL)
 
-    def load_ips(self, mac_addresses: list[str]) -> list[tuple[str, str]]:
+    def load_ips(self, mac_addresses: list[str]) -> set[tuple[str, str]]:
         cur = self.conn.cursor()
         place_holders = ', '.join(['?'] * len(mac_addresses))
         QUERY = f"SELECT mac, ip FROM client_info WHERE mac IN ({
             place_holders})"
         cur.execute(QUERY, tuple(m for m in mac_addresses))
-        return [record for record in cur.fetchall()]
+        return {record for record in cur.fetchall()}
 
     def load_info(self, mac_addresses: Optional[list[str]] = None) -> dict[str, ClientInfo]:
         info = {}
@@ -85,7 +71,7 @@ class TPLinkScraper():
         SELECT i.mac, t.rx_bytes, t.tx_bytes, t.timestamp
         FROM client_traffic t
         JOIN client_info i
-        ON t.client_id = i.rowid
+        ON t.client_id = i.row_id
         WHERE i.mac in ({MAC_STRS}) AND t.is_connected = 1"""
 
         if since_timestamp is not None:
@@ -191,14 +177,14 @@ class TPLinkScraper():
             ip_map[entry['ipaddr']] = mac
 
         cur = self.conn.cursor()
-        cur.execute("SELECT rowid, * FROM client_info")
+        cur.execute("SELECT * FROM client_info")
         num_updated = 0
         num_added = 0
         num_total = 0
         num_traffic = 0
         num_connected = 0
         for record in cur.fetchall():
-            rowid = record[0]
+            row_id = record[0]
             db_client = ClientInfo(*record[1:])
             if db_client.mac in devices:
                 device = devices.pop(db_client.mac)
@@ -207,11 +193,11 @@ class TPLinkScraper():
                     continue
                 else:
                     cur.execute(
-                        'UPDATE client_info SET is_reserved=?, ip=?, client_name=?, description=? WHERE rowid=?', client[1:] + (rowid,))
+                        'UPDATE client_info SET is_reserved=?, ip=?, client_name=?, description=? WHERE row_id=?', client[1:] + (row_id,))
                     num_updated += 1
             elif db_client.ip is not None:
                 cur.execute(
-                    'UPDATE client_info SET is_reserved=0, ip=NULL WHERE rowid=?', (rowid,))
+                    'UPDATE client_info SET is_reserved=0, ip=NULL WHERE row_id=?', (row_id,))
                 num_updated += 1
 
         for mac, device in devices.items():
@@ -221,9 +207,9 @@ class TPLinkScraper():
             num_added += 1
         self.conn.commit()
 
-        cur.execute("SELECT rowid, ip FROM client_info")
+        cur.execute("SELECT row_id, ip FROM client_info")
         for record in cur.fetchall():
-            rowid, ip = record
+            row_id, ip = record
             found = False
             num_total += 1
             if ip is not None:
@@ -231,16 +217,16 @@ class TPLinkScraper():
                     if device['addr'] == ip:
                         found = True
                         cur.execute('INSERT INTO client_traffic (client_id, is_connected, rx_bytes, tx_bytes) VALUES (?, 1, ?, ?)',
-                                    (rowid, device['rx_bytes'], device['tx_bytes']))
+                                    (row_id, device['rx_bytes'], device['tx_bytes']))
                         num_traffic += 1
                         break
                 if not found:
                     cur.execute(
-                        'INSERT INTO client_traffic (client_id, is_connected) VALUES (?, 1)', (rowid,))
+                        'INSERT INTO client_traffic (client_id, is_connected) VALUES (?, 1)', (row_id,))
                 num_connected += 1
             else:
                 cur.execute(
-                    'INSERT INTO client_traffic (client_id, is_connected) VALUES (?, 0)', (rowid,))
+                    'INSERT INTO client_traffic (client_id, is_connected) VALUES (?, 0)', (row_id,))
         self.conn.commit()
         print(f'num_updated: {num_updated}')
         print(f'num_added: {num_added}')

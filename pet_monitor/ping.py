@@ -20,15 +20,17 @@ class PingerItem(NamedTuple):
 
 SCHEMA_SQL = '''\
 CREATE TABLE ping_names (
+    row_id INTEGER NOT NULL,
     name VARCHAR(255),                  -- Name of the pet
-    UNIQUE (name)                       -- Ensure names unique
+    UNIQUE (name),                      -- Ensure names unique
+    PRIMARY KEY(row_id)
 );
 
 CREATE TABLE ping_results (
     name_id INT,                   -- Index of ping_names table entry
     is_connected BOOLEAN,          -- Did ping succeed
     timestamp INTEGER DEFAULT (strftime('%s', 'now')), -- Unix time of observation
-    FOREIGN KEY(name_id) REFERENCES ping_names(rowid)
+    FOREIGN KEY(name_id) REFERENCES ping_names(row_id) ON DELETE CASCADE
 );
 
 '''
@@ -47,7 +49,7 @@ class Pinger:
             SELECT n.name, r.is_connected
             FROM ping_results r
             JOIN ping_names n
-            ON r.name_id = n.rowid
+            ON r.name_id = n.row_id
             WHERE r.timestamp =(
                 SELECT MAX(timestamp)
                 FROM ping_results r2
@@ -62,7 +64,7 @@ class Pinger:
             SELECT n.name, r.is_connected, r.timestamp
             FROM ping_results r
             JOIN ping_names n
-            ON r.name_id = n.rowid
+            ON r.name_id = n.row_id
             WHERE r.timestamp > {since_timestamp} AND n.name IN ({NAME_STRS});"""
         return pd.read_sql(QUERY, self.conn)
 
@@ -75,7 +77,7 @@ class Pinger:
                 SELECT CAST(SUM(r.is_connected) AS FLOAT) / COUNT(*) * 100 ConnectedPct
                 FROM ping_results r
                 JOIN ping_names n
-                ON r.name_id = n.rowid
+                ON r.name_id = n.row_id
                 WHERE r.timestamp > ? AND n.name=?;""", (since_timestamp, name))
             result = cur.fetchone()
             if result[0] is not None:
@@ -106,7 +108,7 @@ class Pinger:
                 SELECT max(r.timestamp) - min(r.timestamp) HistoryAge
                 FROM ping_names n
                 JOIN ping_results r
-                ON r.name_id = n.rowid
+                ON r.name_id = n.row_id
                 WHERE n.name=?
                 LIMIT 1;""", (name,))
             result = cur.fetchone()
@@ -129,7 +131,7 @@ class Pinger:
         with ThreadPoolExecutor() as executor:
             for pet, is_online in zip(pets, executor.map(self._check_host, pets)):
                 cur = self.conn.execute(
-                    "SELECT rowid FROM ping_names WHERE name = ?", (pet.name,))
+                    "SELECT row_id FROM ping_names WHERE name = ?", (pet.name,))
                 result = cur.fetchone()
                 if result is None:
                     cur = self.conn.execute(
@@ -138,7 +140,6 @@ class Pinger:
                     name_id = cur.lastrowid
                 else:
                     name_id = result[0]
-
                 self.conn.execute(
                     'INSERT INTO ping_results (name_id, is_connected) VALUES (?, ?)', (name_id, is_online))
                 self.conn.commit()

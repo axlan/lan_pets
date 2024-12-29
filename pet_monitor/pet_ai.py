@@ -33,17 +33,19 @@ class Relationships(IntEnum):
 # https://dba.stackexchange.com/questions/261309/best-way-to-model-the-relationship-of-unique-pairs
 SCHEMA_SQL = '''\
 CREATE TABLE pet_moods (
+    row_id INTEGER NOT NULL,
     name VARCHAR(255),                  -- Name of the pet
     mood INT,                  -- Mood of the pet
-    UNIQUE (name)                       -- Ensure names unique
+    UNIQUE (name),                       -- Ensure names unique
+    PRIMARY KEY(row_id)
 );
 
 CREATE TABLE pet_relationships (
     name1_id INT,                   -- Name that comes first alphabetically
     name2_id INT,                   -- Name that comes last alphabetically
     relationship INT,               -- Relationship between pets
-    FOREIGN KEY(name1_id) REFERENCES pet_moods(rowid),
-    FOREIGN KEY(name2_id) REFERENCES pet_moods(rowid)
+    FOREIGN KEY(name1_id) REFERENCES pet_moods(row_id) ON DELETE CASCADE,
+    FOREIGN KEY(name2_id) REFERENCES pet_moods(row_id) ON DELETE CASCADE
 );
 '''
 
@@ -77,9 +79,9 @@ class PetAi:
             SELECT name1.name, name2.name, relationship
             FROM pet_relationships
             JOIN pet_moods name1
-            ON name1.rowid = name1_id
+            ON name1.row_id = name1_id
             JOIN pet_moods name2
-            ON name2.rowid = name2_id;""")
+            ON name2.row_id = name2_id;""")
         return {(r[0], r[1], Relationships(r[2])) for r in cur.fetchall()}
 
     def get_relationships(self, names: Iterable[str]) -> dict[str, dict[str, Relationships]]:
@@ -91,9 +93,9 @@ class PetAi:
                 SELECT name1.name, name2.name, relationship
                 FROM pet_relationships
                 JOIN pet_moods name1
-                ON name1.rowid = name1_id
+                ON name1.row_id = name1_id
                 JOIN pet_moods name2
-                ON name2.rowid = name2_id
+                ON name2.row_id = name2_id
                 WHERE name1.name=? OR name2.name=?;""", (name, name))
             for r in cur.fetchall():
                 other_name = r[1] if r[0] == name else r[0]
@@ -132,12 +134,12 @@ class PetAi:
                         names = self.get_ordered_names(name, breakup_name)
                         self.conn.execute("""
                                     DELETE FROM pet_relationships
-                                    WHERE rowid IN (
-                                        SELECT a.rowid FROM pet_relationships a
+                                    WHERE row_id IN (
+                                        SELECT a.row_id FROM pet_relationships a
                                         JOIN pet_moods name1
-                                            ON name1.rowid = name1_id
+                                            ON name1.row_id = name1_id
                                         JOIN pet_moods name2
-                                            ON name2.rowid = name2_id
+                                            ON name2.row_id = name2_id
                                         WHERE name1.name = ? AND name2.name = ?
                                     );""", names)
                         self.conn.commit()
@@ -152,8 +154,8 @@ class PetAi:
                         names = self.get_ordered_names(name, friend_name)
                         self.conn.execute("""
                                     INSERT INTO pet_relationships (name1_id, name2_id, relationship)
-                                    SELECT name1.rowid, name2.rowid, ?
+                                    SELECT name1.row_id, name2.row_id, ?
                                     FROM 
-                                        (SELECT rowid from pet_moods WHERE name=?) name1,
-                                        (SELECT rowid from pet_moods WHERE name=?) name2;""", (int(Relationships.FRIENDS), *names))
+                                        (SELECT row_id from pet_moods WHERE name=?) name1,
+                                        (SELECT row_id from pet_moods WHERE name=?) name2;""", (int(Relationships.FRIENDS), *names))
                         self.conn.commit()
