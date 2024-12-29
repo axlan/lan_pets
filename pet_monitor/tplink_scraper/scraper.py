@@ -1,8 +1,5 @@
 from collections import defaultdict
 import io
-import sqlite3
-import os
-from pathlib import Path
 import time
 import urllib.parse
 from typing import NamedTuple, Optional
@@ -11,12 +8,9 @@ import pandas as pd
 import plotly.graph_objects as go
 from plotly.subplots import make_subplots
 
-from pet_monitor.constants import DATA_DIR
+from pet_monitor.common import DATA_DIR, get_db_connection
 from pet_monitor.settings import TPLinkSettings, get_settings, RateLimiter
 from pet_monitor.tplink_scraper.tplink_interface import TPLinkInterface
-
-
-SCRIPT_PATH = Path(__file__).parent.resolve()
 
 
 class ClientInfo(NamedTuple):
@@ -56,72 +50,50 @@ CREATE TABLE client_traffic (
 '''
 
 
-def create_database_from_schema(db_path):
-    """Create a new SQLite database from a schema file if it doesn't exist."""
-    print(f"Database '{db_path}' does not exist. Creating from schema file...")
-    conn = sqlite3.connect(db_path)
-    cursor = conn.cursor()
-
-    try:
-        cursor.executescript(SCHEMA_SQL)
-        conn.commit()
-        print(f"Database '{db_path}' created successfully.")
-    except sqlite3.Error as e:
-        print(f"An error occurred while creating the database: {e}")
-    finally:
-        conn.close()
-
-
 class TPLinkScraper():
     def __init__(self, settings: TPLinkSettings) -> None:
         self.settings = settings
         self.rate_limiter = RateLimiter(settings.update_period_sec)
-        self.db_path = DATA_DIR / 'tp_clients.sqlite3'
-
-        if not os.path.exists(self.db_path):
-            create_database_from_schema(self.db_path)
+        self.conn = get_db_connection(DATA_DIR / 'tp_clients.sqlite3', SCHEMA_SQL)
 
     def load_ips(self, mac_addresses: list[str]) -> list[tuple[str, str]]:
-        with sqlite3.connect(self.db_path) as conn:
-            cur = conn.cursor()
-            place_holders = ', '.join(['?'] * len(mac_addresses))
-            QUERY = f"SELECT mac, ip FROM client_info WHERE mac IN ({
-                place_holders})"
-            cur.execute(QUERY, tuple(m for m in mac_addresses))
-            return [record for record in cur.fetchall()]
+        cur = self.conn.cursor()
+        place_holders = ', '.join(['?'] * len(mac_addresses))
+        QUERY = f"SELECT mac, ip FROM client_info WHERE mac IN ({
+            place_holders})"
+        cur.execute(QUERY, tuple(m for m in mac_addresses))
+        return [record for record in cur.fetchall()]
 
     def load_info(self, mac_addresses: Optional[list[str]] = None) -> dict[str, ClientInfo]:
         info = {}
-        with sqlite3.connect(self.db_path) as conn:
-            cur = conn.cursor()
-            QUERY = "SELECT * FROM client_info"
-            if mac_addresses is not None:
-                place_holders = ', '.join(['?'] * len(mac_addresses))
-                QUERY += f" WHERE mac IN ({place_holders});"
-                cur.execute(QUERY, tuple(m for m in mac_addresses))
-            else:
-                cur.execute(QUERY+';')
-            for record in cur.fetchall():
-                client = ClientInfo(*record)
-                info[client.mac] = client
+        cur = self.conn.cursor()
+        QUERY = "SELECT * FROM client_info"
+        if mac_addresses is not None:
+            place_holders = ', '.join(['?'] * len(mac_addresses))
+            QUERY += f" WHERE mac IN ({place_holders});"
+            cur.execute(QUERY, tuple(m for m in mac_addresses))
+        else:
+            cur.execute(QUERY+';')
+        for record in cur.fetchall():
+            client = ClientInfo(*record)
+            info[client.mac] = client
         return info
 
     def _load_bps_df(self, mac_addresses: list[str], since_timestamp: Optional[float] = None) -> pd.DataFrame:
-        with sqlite3.connect(self.db_path) as conn:
-            MAC_STRS = ','.join([f'"{m}"' for m in mac_addresses])
-            QUERY = f"""
-            SELECT i.mac, t.rx_bytes, t.tx_bytes, t.timestamp
-            FROM client_traffic t
-            JOIN client_info i
-            ON t.client_id = i.rowid
-            WHERE i.mac in ({MAC_STRS}) AND t.is_connected = 1"""
+        MAC_STRS = ','.join([f'"{m}"' for m in mac_addresses])
+        QUERY = f"""
+        SELECT i.mac, t.rx_bytes, t.tx_bytes, t.timestamp
+        FROM client_traffic t
+        JOIN client_info i
+        ON t.client_id = i.rowid
+        WHERE i.mac in ({MAC_STRS}) AND t.is_connected = 1"""
 
-            if since_timestamp is not None:
-                QUERY += f' AND t.timestamp >= {since_timestamp}'
+        if since_timestamp is not None:
+            QUERY += f' AND t.timestamp >= {since_timestamp}'
 
-            QUERY += ';'
+        QUERY += ';'
 
-            df = pd.read_sql(QUERY, conn)
+        df = pd.read_sql(QUERY, self.conn)
         df.dropna(inplace=True)
         return df
 
@@ -202,81 +174,80 @@ class TPLinkScraper():
             print(e)
             return False
 
-        with sqlite3.connect(self.db_path) as conn:
-            devices = defaultdict(dict)
-            ip_map = {}
-            for entry in reservations:
-                mac = entry['mac']
-                devices[mac]['description'] = urllib.parse.unquote(
-                    entry['note'])
-                devices[mac]['ip'] = entry['ip']
-                devices[mac]['is_reserved'] = 1
-                ip_map[entry['ip']] = mac
-            for entry in clients:
-                mac = entry['macaddr']
-                if entry['name'] != '--':
-                    devices[mac]['client_name'] = entry['name']
-                devices[mac]['ip'] = entry['ipaddr']
-                ip_map[entry['ipaddr']] = mac
+        devices = defaultdict(dict)
+        ip_map = {}
+        for entry in reservations:
+            mac = entry['mac']
+            devices[mac]['description'] = urllib.parse.unquote(
+                entry['note'])
+            devices[mac]['ip'] = entry['ip']
+            devices[mac]['is_reserved'] = 1
+            ip_map[entry['ip']] = mac
+        for entry in clients:
+            mac = entry['macaddr']
+            if entry['name'] != '--':
+                devices[mac]['client_name'] = entry['name']
+            devices[mac]['ip'] = entry['ipaddr']
+            ip_map[entry['ipaddr']] = mac
 
-            cur = conn.cursor()
-            cur.execute("SELECT rowid, * FROM client_info")
-            num_updated = 0
-            num_added = 0
-            num_total = 0
-            num_traffic = 0
-            num_connected = 0
-            for record in cur.fetchall():
-                rowid = record[0]
-                db_client = ClientInfo(*record[1:])
-                if db_client.mac in devices:
-                    device = devices.pop(db_client.mac)
-                    client = ClientInfo(db_client.mac, **device)
-                    if client == db_client:
-                        continue
-                    else:
-                        cur.execute(
-                            'UPDATE client_info SET is_reserved=?, ip=?, client_name=?, description=? WHERE rowid=?', client[1:] + (rowid,))
-                        num_updated += 1
-                elif db_client.ip is not None:
-                    cur.execute(
-                        'UPDATE client_info SET is_reserved=0, ip=NULL WHERE rowid=?', (rowid,))
-                    num_updated += 1
-
-            for mac, device in devices.items():
-                client = ClientInfo(mac, **device)
-                cur.execute(
-                    'INSERT INTO client_info VALUES (?, ?, ?, ?, ?)', client)
-                num_added += 1
-            conn.commit()
-
-            cur.execute("SELECT rowid, ip FROM client_info")
-            for record in cur.fetchall():
-                rowid, ip = record
-                found = False
-                num_total += 1
-                if ip is not None:
-                    for device in traffic:
-                        if device['addr'] == ip:
-                            found = True
-                            cur.execute('INSERT INTO client_traffic (client_id, is_connected, rx_bytes, tx_bytes) VALUES (?, 1, ?, ?)',
-                                        (rowid, device['rx_bytes'], device['tx_bytes']))
-                            num_traffic += 1
-                            break
-                    if not found:
-                        cur.execute(
-                            'INSERT INTO client_traffic (client_id, is_connected) VALUES (?, 1)', (rowid,))
-                    num_connected += 1
+        cur = self.conn.cursor()
+        cur.execute("SELECT rowid, * FROM client_info")
+        num_updated = 0
+        num_added = 0
+        num_total = 0
+        num_traffic = 0
+        num_connected = 0
+        for record in cur.fetchall():
+            rowid = record[0]
+            db_client = ClientInfo(*record[1:])
+            if db_client.mac in devices:
+                device = devices.pop(db_client.mac)
+                client = ClientInfo(db_client.mac, **device)
+                if client == db_client:
+                    continue
                 else:
                     cur.execute(
-                        'INSERT INTO client_traffic (client_id, is_connected) VALUES (?, 0)', (rowid,))
-            conn.commit()
-            print(f'num_updated: {num_updated}')
-            print(f'num_added: {num_added}')
-            print(f'num_traffic: {num_traffic}')
-            print(f'num_connected: {num_connected}')
-            print(f'num_total: {num_total}')
-            return True
+                        'UPDATE client_info SET is_reserved=?, ip=?, client_name=?, description=? WHERE rowid=?', client[1:] + (rowid,))
+                    num_updated += 1
+            elif db_client.ip is not None:
+                cur.execute(
+                    'UPDATE client_info SET is_reserved=0, ip=NULL WHERE rowid=?', (rowid,))
+                num_updated += 1
+
+        for mac, device in devices.items():
+            client = ClientInfo(mac, **device)
+            cur.execute(
+                'INSERT INTO client_info VALUES (?, ?, ?, ?, ?)', client)
+            num_added += 1
+        self.conn.commit()
+
+        cur.execute("SELECT rowid, ip FROM client_info")
+        for record in cur.fetchall():
+            rowid, ip = record
+            found = False
+            num_total += 1
+            if ip is not None:
+                for device in traffic:
+                    if device['addr'] == ip:
+                        found = True
+                        cur.execute('INSERT INTO client_traffic (client_id, is_connected, rx_bytes, tx_bytes) VALUES (?, 1, ?, ?)',
+                                    (rowid, device['rx_bytes'], device['tx_bytes']))
+                        num_traffic += 1
+                        break
+                if not found:
+                    cur.execute(
+                        'INSERT INTO client_traffic (client_id, is_connected) VALUES (?, 1)', (rowid,))
+                num_connected += 1
+            else:
+                cur.execute(
+                    'INSERT INTO client_traffic (client_id, is_connected) VALUES (?, 0)', (rowid,))
+        self.conn.commit()
+        print(f'num_updated: {num_updated}')
+        print(f'num_added: {num_added}')
+        print(f'num_traffic: {num_traffic}')
+        print(f'num_connected: {num_connected}')
+        print(f'num_total: {num_total}')
+        return True
 
 
 def main():
