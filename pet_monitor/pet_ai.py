@@ -3,7 +3,7 @@ from enum import IntEnum
 import random
 from typing import Iterable, NamedTuple
 
-from pet_monitor.common import DATA_DIR, get_db_connection
+from pet_monitor.common import DATA_DIR, delete_missing_names, get_db_connection
 from pet_monitor.settings import PetAISettings, RateLimiter
 
 
@@ -109,6 +109,9 @@ class PetAi:
     def update(self, pets: dict[str, MoodAttributes]) -> None:
         if not self.rate_limiter.get_ready():
             return
+        
+        # Clear deleted pets
+        delete_missing_names(self.conn, 'ping_names', [n for n in pets])
         
         online_pets = { k for k, p in pets.items() if p.on_line}
         all_relationships = self.get_relationships(online_pets)

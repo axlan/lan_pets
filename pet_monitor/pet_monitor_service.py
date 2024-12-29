@@ -64,7 +64,7 @@ def main():
                 mood_data = {}
                 pet_availability = pinger.load_availability_mean(pet_data.keys())
                 pet_is_up = pinger.load_current_availability(pet_data.keys())
-                histort_len = pinger.get_history_len(pet_data.keys())
+                history_len = pinger.get_history_len(pet_data.keys())
                 if tplink_scraper is not None:
                     traffic_stats = tplink_scraper.load_mean_bps(macs)
                 else:
@@ -76,7 +76,7 @@ def main():
                         tx_bps=traffic_stats[pet.mac_address].tx_bytes_bps,
                         on_line=pet_is_up[pet.name],
                         availability=pet_availability[pet.name],
-                        history_len_sec=histort_len[pet.name]
+                        history_len_sec=history_len[pet.name]
                     )
                 
                 pet_ai.update(mood_data)

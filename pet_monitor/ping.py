@@ -9,7 +9,7 @@ import pandas as pd
 import plotly_express as px
 from icmplib import ping
 
-from pet_monitor.common import DATA_DIR, get_db_connection
+from pet_monitor.common import DATA_DIR, get_db_connection, delete_missing_names
 from pet_monitor.settings import PingerSettings, RateLimiter, get_settings
 
 
@@ -126,6 +126,9 @@ class Pinger:
     def update(self, pets: list[PingerItem]) -> None:
         if not self.rate_limiter.get_ready():
             return
+        
+        # Clear deleted pets
+        delete_missing_names(self.conn, 'ping_names', [p.name for p in pets])
 
         # Ideally, don't block on this. Leaving the scope waits for all threads to finish.
         with ThreadPoolExecutor() as executor:

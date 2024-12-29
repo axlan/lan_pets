@@ -2,7 +2,7 @@
 import os
 from pathlib import Path
 import sqlite3
-from typing import Iterable, NamedTuple, Optional
+from typing import Collection, Iterable, NamedTuple, Optional
 
 
 DATA_DIR = Path(__file__).parents[1].resolve() / 'data'
@@ -41,3 +41,11 @@ def get_db_connection(db_path: Path, sql_schema: str) -> sqlite3.Connection:
         conn.commit()
         print(f"Database '{db_path}' created successfully.")
     return conn
+
+
+def delete_missing_names(conn: sqlite3.Connection, table: str, names: Collection[str]) -> None:
+    cur = conn.cursor()
+    place_holders = ', '.join(['?'] * len(names))
+    QUERY = f"DELETE FROM {table} WHERE name NOT IN ({place_holders})"
+    cur.execute(QUERY, tuple(n for n in names))
+    conn.commit()
