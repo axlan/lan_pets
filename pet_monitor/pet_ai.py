@@ -111,7 +111,7 @@ class PetAi:
             return
         
         # Clear deleted pets
-        delete_missing_names(self.conn, 'ping_names', [n for n in pets])
+        delete_missing_names(self.conn, 'pet_moods', [n for n in pets])
         
         online_pets = { k for k, p in pets.items() if p.on_line}
         all_relationships = self.get_relationships(online_pets)

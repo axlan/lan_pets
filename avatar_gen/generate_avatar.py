@@ -9,8 +9,6 @@ from PIL import Image
 from .mac_lookup import get_vendor_name
 
 _SCRIPT_PATH = Path(__file__).parents[0].resolve()
-_REPO_PATH = Path(__file__).parents[1].resolve()
-_DATA_PATH = _REPO_PATH / 'data'
 
 
 class _ImageEntry(NamedTuple):

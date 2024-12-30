@@ -6,3 +6,4 @@ icmplib
 pycryptodome
 plotly_express
 kaleido
+gunicorn
