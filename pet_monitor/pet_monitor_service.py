@@ -17,8 +17,8 @@ from lan_pets.settings import INSTALLED_APPS
 os.environ.setdefault("DJANGO_SETTINGS_MODULE", "lan_pets.settings")
 apps.populate(INSTALLED_APPS)
 from manage_pets.models import PetData
-from pet_monitor.common import (DATA_DIR, LoggingTimeFilter, get_empty_traffic,
-                                get_loggers_by_prefix)
+from pet_monitor.common import (CONSOLE_LOG_FILE, LoggingTimeFilter,
+                                get_empty_traffic, get_loggers_by_prefix)
 from pet_monitor.pet_ai import MoodAttributes, PetAi
 from pet_monitor.ping import Pinger, PingerItem
 from pet_monitor.settings import get_settings
@@ -26,7 +26,7 @@ from pet_monitor.tplink_scraper.scraper import TPLinkScraper
 
 
 def main():
-    fh = logging.FileHandler(DATA_DIR / 'monitor_service.txt')
+    fh = logging.FileHandler(CONSOLE_LOG_FILE)
     fh.setLevel(logging.INFO)
     fh.addFilter(LoggingTimeFilter())
     fh.setFormatter(logging.Formatter('%(unix_time)s: %(message)s'))

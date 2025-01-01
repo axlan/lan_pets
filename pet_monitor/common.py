@@ -7,6 +7,7 @@ from pathlib import Path
 from typing import Collection, Iterable, NamedTuple, Optional
 
 DATA_DIR = Path(__file__).parents[1].resolve() / 'data'
+CONSOLE_LOG_FILE = DATA_DIR / 'monitor_service.txt'
 _logger = logging.getLogger(__name__)
 
 

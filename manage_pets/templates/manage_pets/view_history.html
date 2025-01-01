@@ -7,11 +7,6 @@
     <link rel="shortcut icon" type="image/png" href="{% static 'favicon.ico' %}"/>
   </head>
   <body>
-    <form method="post">
-      {% csrf_token %}
-      <textarea name="pet-description" cols="80" rows="25">{{ pet.description }}</textarea>
-      <br>
-      <input type="submit" value="Save" />
-    </form>
+    <pre>{{display_data}}</pre>
   </body>
 </html>

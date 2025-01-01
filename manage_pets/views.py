@@ -1,15 +1,20 @@
 import base64
 import logging
 import os
+import re
 import time
+from datetime import UTC, date, datetime
 from pathlib import Path
 from random import randrange
+from typing import Optional
+from zoneinfo import ZoneInfo
 
 from django.shortcuts import redirect, render
 from django.views.decorators.csrf import csrf_exempt
 
 from avatar_gen.generate_avatar import get_pet_avatar
 from manage_pets.models import PetData
+from pet_monitor.common import CONSOLE_LOG_FILE
 from pet_monitor.pet_ai import PetAi
 from pet_monitor.ping import Pinger
 from pet_monitor.settings import get_settings
@@ -23,6 +28,8 @@ _STATIC_PATH = _REPO_PATH / 'data/static'
 os.makedirs(_STATIC_PATH, exist_ok=True)
 
 _MONITOR_SETTINGS = get_settings()
+
+_MAX_LOG_HISTORY_BYTES = 1024 * 32
 
 greetings = [line.strip() for line in open('data/greetings.txt').readlines()]
 
@@ -139,6 +146,33 @@ def delete_pet(request, name):
         pet.delete()
 
     return redirect('/manage_pets')
+
+
+def view_history(request, name=''):
+    if not CONSOLE_LOG_FILE.exists():
+        return "Not Found"
+    file_size = CONSOLE_LOG_FILE.stat().st_size
+    history_fd = open(CONSOLE_LOG_FILE, 'r')
+    if file_size > _MAX_LOG_HISTORY_BYTES:
+        history_fd.seek(file_size - _MAX_LOG_HISTORY_BYTES)
+    display_data = ''
+    re_timestamp = re.compile(r'^([0-9]+):')
+    current_day: Optional[date] = None
+    lines = history_fd.readlines()
+    lines.reverse()
+    for line in lines:
+        if len(name) == 0 or name in line:
+            m = re_timestamp.search(line)
+            if m:
+                timestamp = int(m.group(1))
+                local_zone = ZoneInfo(_MONITOR_SETTINGS.plot_timezone)
+                entry = datetime.fromtimestamp(timestamp, UTC).astimezone(local_zone)
+                if current_day is None or (current_day - entry.date()).days > 0:
+                    current_day = entry.date()
+                    display_data += current_day.strftime('%m/%d/%Y') + '\n'
+                line = re_timestamp.sub(entry.strftime('%H:%M:%S:'), line)
+            display_data += "  " + line
+    return render(request, "manage_pets/view_history.html", {'display_data': display_data})
 
 
 def edit_pet(request, name):
