@@ -87,11 +87,16 @@ def manage_pets(request):
 
 
 def view_relationships(request):
-    names = {pet.name for pet in PetData.objects.iterator()}
+    names:set[str] = set()
+    icons:dict[str, str] = {}
+    for pet in PetData.objects.iterator():
+        names.add(pet.name)
+        icons[pet.name] = get_pet_avatar(_STATIC_PATH, pet.device_type, pet.mac_address).name
+
     pet_ai = PetAi(_MONITOR_SETTINGS.pet_ai_settings)
     relationships = pet_ai.get_all_relationships()
-    pet_data = {(n, pet_ai.get_moods(names)[n].name.lower()) for n in names}
-    relationships = {(r[0], r[1], r[2].name.lower()) for r in relationships}
+    pet_data = {(n, pet_ai.get_moods(names)[n].name.lower(), icons[n]) for n in names}
+    relationships = {(r[0], r[1], r[2].name.lower(), ) for r in relationships}
     return render(request, "manage_pets/view_relationships.html", {'pet_data': pet_data,
                                                                    'relationships': relationships, })
 

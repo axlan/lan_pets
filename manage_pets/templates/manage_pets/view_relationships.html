@@ -27,8 +27,8 @@
     <script type="text/javascript">
       // create an array with nodes
       var nodes = new vis.DataSet([
-      {% for name, mood in pet_data %} 
-        { id: "{{name}}", label: "{{name}}", title: "{{mood}}" },
+      {% for name, mood, icon in pet_data %} 
+        { id: "{{name}}", label: "{{name}}", title: "{{mood}}", shape: "circularImage", image: "{% static icon %}" },
       {% endfor %}
       ]);
 

@@ -23,10 +23,10 @@ http://127.0.0.1:8000/
 http://127.0.0.1:8000/view_relationships
 
 TODO:
+Add header with links to manage pets, history and relationships
 Identifiers, host, MAC, mDNS?
 Figure out sensors for each device (ping, http, custom, SNMP)
 Any way to better abstract the router info dump?
-Add header with links to manage pets, history and relationships
 Add more stuff to relationship view, like moods as a color with legend
 Add different mood algorithms
 Chat bubbles for messages
