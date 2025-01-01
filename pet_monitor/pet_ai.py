@@ -1,13 +1,15 @@
+import logging
+import random
 from collections import defaultdict
 from enum import IntEnum
-import random
 from typing import Iterable, NamedTuple
-import logging
 
-from pet_monitor.common import DATA_DIR, delete_missing_names, get_db_connection
-from pet_monitor.settings import PetAISettings, RateLimiter, MoodAlgorithm
+from pet_monitor.common import (DATA_DIR, delete_missing_names,
+                                get_db_connection)
+from pet_monitor.settings import MoodAlgorithm, PetAISettings, RateLimiter
 
 _logger = logging.getLogger(__name__)
+
 
 class MoodAttributes(NamedTuple):
     rx_bps: float
@@ -31,6 +33,7 @@ class Moods(IntEnum):
 class Relationships(IntEnum):
     FRIENDS = 1
 
+
 # TODO: There's probably a better way to encode the relationship, or enforce uniqueness:
 # https://dba.stackexchange.com/questions/261309/best-way-to-model-the-relationship-of-unique-pairs
 SCHEMA_SQL = '''\
@@ -51,11 +54,13 @@ CREATE TABLE pet_relationships (
 );
 '''
 
+
 def _get_mood(stats: MoodAttributes, settings: PetAISettings):
     if settings.mood_algorithm is MoodAlgorithm.RANDOM:
         return random.choice(tuple(m for m in Moods))
     else:
         return Moods.JOLLY
+
 
 class PetAi:
 
@@ -65,7 +70,7 @@ class PetAi:
         self.conn = get_db_connection(DATA_DIR / 'pet_moods.sqlite3', SCHEMA_SQL)
 
     def get_moods(self, names: Iterable[str]) -> dict[str, Moods]:
-        moods = {n:Moods.JOLLY for n in names}
+        moods = {n: Moods.JOLLY for n in names}
         cur = self.conn.cursor()
         NAME_STRS = ','.join([f'"{n}"' for n in names])
         QUERY = f"""
@@ -109,16 +114,16 @@ class PetAi:
 
     @staticmethod
     def get_ordered_names(name1: str, name2: str) -> tuple[str, str]:
-            return (name1, name2) if name1 < name2 else (name2, name1)
+        return (name1, name2) if name1 < name2 else (name2, name1)
 
     def update(self, pets: dict[str, MoodAttributes]) -> None:
         if not self.rate_limiter.get_ready():
             return
-        
+
         # Clear deleted pets
         delete_missing_names(self.conn, 'pet_moods', [n for n in pets])
-        
-        online_pets = { k for k, p in pets.items() if p.on_line}
+
+        online_pets = {k for k, p in pets.items() if p.on_line}
         all_relationships = self.get_relationships(online_pets)
         previous_moods = self.get_moods(pets)
 
@@ -135,7 +140,9 @@ class PetAi:
             # TODO: Add other relationships
             if stats.on_line:
                 pet_relationships = all_relationships.get(name)
-                potentials = {n for n in online_pets if (pet_relationships is None or n not in pet_relationships) and n != name}
+                potentials = {
+                    n for n in online_pets if (
+                        pet_relationships is None or n not in pet_relationships) and n != name}
                 if pet_relationships is not None and len(pet_relationships) > 0:
                     if random.uniform(0, 1) < self.settings.prob_lose_friend:
                         breakup_name = random.choice([n for n in pet_relationships])
@@ -154,9 +161,12 @@ class PetAi:
                                         WHERE name1.name = ? AND name2.name = ?
                                     );""", names)
                         self.conn.commit()
-                
+
                 if len(potentials) > 0:
-                    prob_new_friend = max(self.settings.prob_make_friend - self.settings.prob_make_friend_per_friend_drop , 0) 
+                    prob_new_friend = max(
+                        self.settings.prob_make_friend -
+                        self.settings.prob_make_friend_per_friend_drop,
+                        0)
                     if random.uniform(0, 1) < prob_new_friend:
                         friend_name = random.choice([n for n in potentials])
                         _logger.info(f'Friendship between {name} and {friend_name}')
@@ -166,7 +176,7 @@ class PetAi:
                         self.conn.execute("""
                                     INSERT INTO pet_relationships (name1_id, name2_id, relationship)
                                     SELECT name1.row_id, name2.row_id, ?
-                                    FROM 
+                                    FROM
                                         (SELECT row_id from pet_moods WHERE name=?) name1,
                                         (SELECT row_id from pet_moods WHERE name=?) name2;""", (int(Relationships.FRIENDS), *names))
                         self.conn.commit()

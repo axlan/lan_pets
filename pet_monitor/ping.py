@@ -1,15 +1,13 @@
-from concurrent.futures import ThreadPoolExecutor
 import io
-import os
-from pathlib import Path
-import sqlite3
-from typing import Iterable, NamedTuple, Optional
+from concurrent.futures import ThreadPoolExecutor
+from typing import Iterable, NamedTuple
 
 import pandas as pd
 import plotly_express as px
 from icmplib import ping
 
-from pet_monitor.common import DATA_DIR, get_db_connection, delete_missing_names
+from pet_monitor.common import (DATA_DIR, delete_missing_names,
+                                get_db_connection)
 from pet_monitor.settings import PingerSettings, RateLimiter, get_settings
 
 
@@ -35,13 +33,14 @@ CREATE TABLE ping_results (
 
 '''
 
+
 class Pinger:
 
     def __init__(self, settings: PingerSettings) -> None:
         self.rate_limiter = RateLimiter(settings.update_period_sec)
         self.conn = get_db_connection(DATA_DIR / 'ping_results.sqlite3', SCHEMA_SQL)
 
-    def load_current_availability(self, names:Iterable[str]) -> dict[str, bool]:
+    def load_current_availability(self, names: Iterable[str]) -> dict[str, bool]:
         results = {n: False for n in names}
         cur = self.conn.cursor()
         cur.execute(
@@ -58,7 +57,7 @@ class Pinger:
         results.update({r[0]: bool(r[1]) for r in cur.fetchall()})
         return results
 
-    def load_availability(self, names:Iterable[str], since_timestamp=0.0) -> pd.DataFrame:
+    def load_availability(self, names: Iterable[str], since_timestamp=0.0) -> pd.DataFrame:
         NAME_STRS = ','.join([f'"{n}"' for n in names])
         QUERY = f"""
             SELECT n.name, r.is_connected, r.timestamp
@@ -68,7 +67,7 @@ class Pinger:
             WHERE r.timestamp > {since_timestamp} AND n.name IN ({NAME_STRS});"""
         return pd.read_sql(QUERY, self.conn)
 
-    def load_availability_mean(self, names:Iterable[str], since_timestamp=0.0) -> dict[str, float]:
+    def load_availability_mean(self, names: Iterable[str], since_timestamp=0.0) -> dict[str, float]:
         availability = {n: 0.0 for n in names}
         cur = self.conn.cursor()
         for name in names:
@@ -92,14 +91,14 @@ class Pinger:
 
         fig = px.line(df, x='timestamp', y="is_connected", line_shape='hv')
         fig.update_traces(mode='lines+markers')
-        #fig.write_image('/tmp/pings.png')
+        # fig.write_image('/tmp/pings.png')
 
         fd = io.BytesIO()
         fig.write_image(fd, format='webp')
         fd.seek(0)
         return fd.read()
 
-    def get_history_len(self, names:Iterable[str]) -> dict[str, int]:
+    def get_history_len(self, names: Iterable[str]) -> dict[str, int]:
         availability = {}
         cur = self.conn.cursor()
         for name in names:
@@ -126,7 +125,7 @@ class Pinger:
     def update(self, pets: list[PingerItem]) -> None:
         if not self.rate_limiter.get_ready():
             return
-        
+
         # Clear deleted pets
         delete_missing_names(self.conn, 'ping_names', [p.name for p in pets])
 
@@ -147,6 +146,7 @@ class Pinger:
                     'INSERT INTO ping_results (name_id, is_connected) VALUES (?, ?)', (name_id, is_online))
                 self.conn.commit()
 
+
 def main():
     settings = get_settings().pinger_settings
     if settings is None:
@@ -154,10 +154,10 @@ def main():
         return
     pinger = Pinger(settings)
 
-    #print(pinger.load_availability(['bee', 'Nest-Hello-5b0c']))
+    # print(pinger.load_availability(['bee', 'Nest-Hello-5b0c']))
     pinger.generate_uptime_plot('bee')
-    
-    #print(pinger.get_history_len(['zephyrus', 'Thermo']))
+
+    # print(pinger.get_history_len(['zephyrus', 'Thermo']))
 
 
 if __name__ == '__main__':

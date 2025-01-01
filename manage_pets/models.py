@@ -1,9 +1,10 @@
-from django.db import models
 from django.core.validators import RegexValidator
+from django.db import models
 from django.utils import timezone
 
 # TBD add host names
 # ValidHostnameRegex = "^(([a-zA-Z0-9]|[a-zA-Z0-9][a-zA-Z0-9\-]*[a-zA-Z0-9])\.)*([A-Za-z0-9]|[A-Za-z0-9][A-Za-z0-9\-]*[A-Za-z0-9])$";
+
 
 class PetData(models.Model):
     class PrimaryIdentifier(models.TextChoices):
@@ -27,7 +28,6 @@ class PetData(models.Model):
         MEDIA = 'MEDIA', "Media"
         GAMES = 'GAMES', "Games"
         OTHER = 'OTHER', "Other"
-
 
     name = models.CharField(max_length=64)
     description = models.CharField(max_length=1024)

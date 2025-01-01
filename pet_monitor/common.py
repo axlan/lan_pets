@@ -1,13 +1,14 @@
 
+import logging
 import os
-from pathlib import Path
 import sqlite3
 import time
+from pathlib import Path
 from typing import Collection, Iterable, NamedTuple, Optional
-import logging
 
 DATA_DIR = Path(__file__).parents[1].resolve() / 'data'
 _logger = logging.getLogger(__name__)
+
 
 class ClientInfo(NamedTuple):
     mac: str
@@ -26,7 +27,7 @@ class TrafficStats(NamedTuple):
 
 
 def get_empty_traffic(mac_addresses: Iterable[str]) -> dict[str, TrafficStats]:
-    return {m:TrafficStats(0,0,0,0,0) for m in mac_addresses}
+    return {m: TrafficStats(0, 0, 0, 0, 0) for m in mac_addresses}
 
 
 def get_db_connection(db_path: Path, sql_schema: str) -> sqlite3.Connection:

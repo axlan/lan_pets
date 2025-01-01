@@ -1,8 +1,8 @@
 import json
-from pathlib import Path
-from typing import NamedTuple
 import random
 import sys
+from pathlib import Path
+from typing import NamedTuple
 
 from PIL import Image
 
@@ -91,7 +91,8 @@ class AvatarGen:
             ))
         return selections
 
-    def generate_image(self, out_file: Path, selections: list[Selection] = [], seed: int | float | str | bytes | bytearray | None = None):
+    def generate_image(self, out_file: Path, selections: list[Selection] = [],
+                       seed: int | float | str | bytes | bytearray | None = None):
         r = random.Random(seed)
         part_selections: list[_ImageEntry] = []
         for part in self.ordered_parts:
@@ -149,7 +150,7 @@ def get_pet_avatar(out_dir: Path, device_type: str, mac_address: str) -> Path:
         for choice in choices:
             selections.append(Selection(
                 choice.name,
-                item_idx=r.randint(0, choice.item_idx-1),  # type: ignore
+                item_idx=r.randint(0, choice.item_idx - 1),  # type: ignore
                 disable=choice.name == 'background'
             ))
 

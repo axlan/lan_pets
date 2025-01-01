@@ -1,6 +1,7 @@
-from django.urls import path
-from manage_pets import views
 from django.contrib.staticfiles.urls import staticfiles_urlpatterns
+from django.urls import path
+
+from manage_pets import views
 
 urlpatterns = [
     path("", views.manage_pets, name="manage_pets"),

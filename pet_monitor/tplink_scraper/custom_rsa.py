@@ -1,8 +1,9 @@
 # Copy of /home/vscode/.local/lib/python3.12/site-packages/Crypto/Cipher/PKCS1_v1_5.py with custom padding
 
 from Crypto import Random
-from Crypto.Util.number import bytes_to_long, long_to_bytes
 from Crypto.Cipher.PKCS1_v1_5 import PKCS115_Cipher
+from Crypto.Util.number import bytes_to_long, long_to_bytes
+
 
 class Custom_PKCS115_Cipher(PKCS115_Cipher):
     def encrypt(self, message):
@@ -43,7 +44,7 @@ class Custom_PKCS115_Cipher(PKCS115_Cipher):
         # ps = b"".join(ps)
         # # Step 2b
         # em = b'\x00\x02' + ps + b'\x00' + _copy_bytes(None, None, message)
-        em = message + b'\x00'*(k - mLen)
+        em = message + b'\x00' * (k - mLen)
         # Step 3a (OS2IP)
         em_int = bytes_to_long(em)
         # Step 3b (RSAEP)
@@ -51,6 +52,7 @@ class Custom_PKCS115_Cipher(PKCS115_Cipher):
         # Step 3c (I2OSP)
         c = long_to_bytes(m_int, k)
         return c
+
 
 def new(key, randfunc=None):
     """Create a cipher for performing PKCS#1 v1.5 encryption or decryption.

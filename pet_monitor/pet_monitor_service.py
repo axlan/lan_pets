@@ -8,18 +8,20 @@ import time
 
 # Django setup so model modules import without errors.
 from django.apps import apps
+
 from lan_pets.settings import INSTALLED_APPS
+
 # Could use:
 # from django.conf import settings
 # settings.configure(**conf)
 os.environ.setdefault("DJANGO_SETTINGS_MODULE", "lan_pets.settings")
 apps.populate(INSTALLED_APPS)
 from manage_pets.models import PetData
-
-from pet_monitor.common import LoggingTimeFilter, get_empty_traffic, DATA_DIR, get_loggers_by_prefix
+from pet_monitor.common import (DATA_DIR, LoggingTimeFilter, get_empty_traffic,
+                                get_loggers_by_prefix)
 from pet_monitor.pet_ai import MoodAttributes, PetAi
-from pet_monitor.settings import get_settings
 from pet_monitor.ping import Pinger, PingerItem
+from pet_monitor.settings import get_settings
 from pet_monitor.tplink_scraper.scraper import TPLinkScraper
 
 
@@ -28,7 +30,7 @@ def main():
     fh.setLevel(logging.INFO)
     fh.addFilter(LoggingTimeFilter())
     fh.setFormatter(logging.Formatter('%(unix_time)s: %(message)s'))
-    
+
     ch = logging.StreamHandler()
     ch.setLevel(logging.DEBUG)
     ch.setFormatter(logging.Formatter('%(asctime)s - %(name)s - %(levelname)s - %(message)s'))
@@ -65,7 +67,7 @@ def main():
                 mac_ip_map = settings.hard_coded_mac_ip_map()
                 if tplink_scraper is not None:
                     mac_ip_map.update(tplink_scraper.load_ips(macs))
-                ip_map:dict[str,str] = {}
+                ip_map: dict[str, str] = {}
                 for mac, ip in mac_ip_map:
                     for pet in pet_data.values():
                         if pet.mac_address == mac:
@@ -92,7 +94,7 @@ def main():
                         availability=pet_availability[pet.name],
                         history_len_sec=history_len[pet.name]
                     )
-                
+
                 pet_ai.update(mood_data)
     except KeyboardInterrupt:
         pass

@@ -1,9 +1,9 @@
 
 import json
-from pathlib import Path
-import sys
-import sqlite3
 import os
+import sqlite3
+import sys
+from pathlib import Path
 
 _REPO_PATH = Path(__file__).parents[1].resolve()
 _DB_PATH = _REPO_PATH / 'data/mac_lookup.sqlite3'

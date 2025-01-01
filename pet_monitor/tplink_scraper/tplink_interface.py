@@ -1,12 +1,13 @@
-import requests
-
+import logging
 import urllib.parse
 
+import requests
 from Crypto.PublicKey import RSA
+
 from pet_monitor.tplink_scraper.custom_rsa import new
-import logging
 
 _logger = logging.getLogger(__name__)
+
 
 class TPLinkInterface:
     COMMON_HEADERS = {
@@ -105,6 +106,7 @@ class TPLinkInterface:
         # "addr":"192.168.1.139", "tx_pps":0, "tx_bps":0, "rx_bps":0,
         # "rx_pkts":878, "tx_pkts":944, "rx_pps":0 }, ...} ],
         # "error_code":"0" }
+
 
 if __name__ == '__main__':
     import sys

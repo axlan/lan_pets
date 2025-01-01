@@ -7,3 +7,5 @@ pycryptodome
 plotly_express
 kaleido
 gunicorn
+autopep8
+isort

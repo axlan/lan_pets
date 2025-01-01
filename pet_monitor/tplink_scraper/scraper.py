@@ -1,16 +1,17 @@
-from collections import defaultdict
 import io
+import logging
 import time
 import urllib.parse
+from collections import defaultdict
 from typing import NamedTuple, Optional
-import logging
 
 import pandas as pd
 import plotly.graph_objects as go
 from plotly.subplots import make_subplots
 
-from pet_monitor.common import DATA_DIR, get_db_connection, ClientInfo, TrafficStats
-from pet_monitor.settings import TPLinkSettings, get_settings, RateLimiter
+from pet_monitor.common import (DATA_DIR, ClientInfo, TrafficStats,
+                                get_db_connection)
+from pet_monitor.settings import RateLimiter, TPLinkSettings, get_settings
 from pet_monitor.tplink_scraper.tplink_interface import TPLinkInterface
 
 _logger = logging.getLogger(__name__)
@@ -62,7 +63,7 @@ class TPLinkScraper():
             QUERY += f" WHERE mac IN ({place_holders});"
             cur.execute(QUERY, tuple(m for m in mac_addresses))
         else:
-            cur.execute(QUERY+';')
+            cur.execute(QUERY + ';')
         for record in cur.fetchall():
             client = ClientInfo(*record)
             info[client.mac] = client
@@ -101,8 +102,9 @@ class TPLinkScraper():
                 mac_df.loc[mac_df[bps_col] < 0, bps_col] = 0
             results[mac] = mac_df
         return results
-    
-    def generate_traffic_plot(self, mac_address: str, since_timestamp: Optional[float] = None, sample_rate='1h', time_zone='America/Los_Angeles') -> bytes:
+
+    def generate_traffic_plot(
+            self, mac_address: str, since_timestamp: Optional[float] = None, sample_rate='1h', time_zone='America/Los_Angeles') -> bytes:
         df = self.load_bps([mac_address], since_timestamp=since_timestamp)[mac_address]
         df['timestamp'] = pd.to_datetime(df['timestamp'], unit='s', utc=True).dt.tz_convert(time_zone)
         df.set_index('timestamp', inplace=True)
@@ -115,8 +117,8 @@ class TPLinkScraper():
         fig = make_subplots(specs=[[{"secondary_y": True}]])
 
         # Add traces
-        fig.add_trace(go.Scatter(x=x, y=y1, name="Recieved",  mode='markers'), secondary_y=False)
-        fig.add_trace(go.Scatter(x=x, y=y2, name="Transmitted",  mode='markers'), secondary_y=True)
+        fig.add_trace(go.Scatter(x=x, y=y1, name="Recieved", mode='markers'), secondary_y=False)
+        fig.add_trace(go.Scatter(x=x, y=y2, name="Transmitted", mode='markers'), secondary_y=True)
 
         # Set y-axes titles
         fig.update_yaxes(title_text="<b>Recieved Bytes/Second</b>", type="log", secondary_y=False)
@@ -127,8 +129,8 @@ class TPLinkScraper():
         fd.seek(0)
         return fd.read()
 
-
-    def load_mean_bps(self, mac_addresses: list[str], since_timestamp: Optional[float] = None) -> dict[str, TrafficStats]:
+    def load_mean_bps(self, mac_addresses: list[str],
+                      since_timestamp: Optional[float] = None) -> dict[str, TrafficStats]:
         results = {}
         df = self._load_bps_df(mac_addresses, since_timestamp)
         for mac in mac_addresses:
@@ -138,7 +140,7 @@ class TPLinkScraper():
             durations = mac_df['timestamp'].diff()
             # For metric calculation, remove periods where collection wasn't running, or device was disconnected.
             # type: ignore
-            no_gaps = durations[durations < self.settings.update_period_sec * 2].index # type: ignore
+            no_gaps = durations[durations < self.settings.update_period_sec * 2].index  # type: ignore
             durations = durations[no_gaps]
             for col in ['rx_bytes', 'tx_bytes']:
                 bps_col = f'{col}_bps'
@@ -257,8 +259,6 @@ def main():
     # from plotly import express as px
     # fig = px.line(df, x='timestamp', y=['rx_bytes_bps', 'tx_bytes_bps'])
     # fig.write_image("/tmp/traffic.png")
-
-
 
 
 if __name__ == '__main__':

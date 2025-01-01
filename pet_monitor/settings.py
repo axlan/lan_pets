@@ -1,13 +1,14 @@
 
 
-from enum import Enum, auto
-import time
-from typing import NamedTuple, Optional
 import logging
+import time
+from enum import Enum, auto
+from typing import NamedTuple, Optional
 
 from pet_monitor.common import ClientInfo
 
 _logger = logging.getLogger(__name__)
+
 
 class PingerSettings(NamedTuple):
     update_period_sec = 10.0
@@ -22,7 +23,7 @@ class PetAISettings(NamedTuple):
 
     # Mood parameters.
     mood_algorithm = MoodAlgorithm.RANDOM
-    history_window_sec = 60.0*60.0*24.0*7.0
+    history_window_sec = 60.0 * 60.0 * 24.0 * 7.0
     uptime_ratio_for_available = 0.5
     average_bytes_per_sec_for_loud = 500
 
@@ -57,7 +58,7 @@ class Settings(NamedTuple):
     }
     main_loop_sleep_sec = 0.1
     plot_timezone = 'America/Los_Angeles'
-    plot_data_window_sec = 60.0*60.0*24.0*7.0
+    plot_data_window_sec = 60.0 * 60.0 * 24.0 * 7.0
     pinger_settings = PingerSettings()
     pet_ai_settings = PetAISettings()
 
@@ -65,7 +66,7 @@ class Settings(NamedTuple):
         return {c.mac: c for c in self.hard_coded_clients}
 
     def hard_coded_mac_ip_map(self) -> set[tuple[str, str]]:
-        return { (c.mac, c.ip) for c in self.hard_coded_clients if c.ip is not None}
+        return {(c.mac, c.ip) for c in self.hard_coded_clients if c.ip is not None}
 
 
 class RateLimiter:
@@ -81,7 +82,7 @@ class RateLimiter:
             return True
 
     def is_ready(self) -> bool:
-        return time.monotonic() - self.last_update > self.update_period_sec 
+        return time.monotonic() - self.last_update > self.update_period_sec
 
 
 def get_settings() -> Settings:

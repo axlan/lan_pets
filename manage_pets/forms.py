@@ -1,5 +1,7 @@
 from django import forms
+
 from manage_pets.models import PetData
+
 
 class LogMessageForm(forms.ModelForm):
     class Meta:
@@ -12,7 +14,6 @@ class LogMessageForm(forms.ModelForm):
             if not self.cleaned_data.get(field, ''):
                 msg = forms.ValidationError("This field is required.")
                 self.add_error(field, msg)
-
 
     def clean(self):
         identifier_type = self.cleaned_data.get('identifier_type')
