@@ -3,6 +3,7 @@ import io
 import time
 import urllib.parse
 from typing import NamedTuple, Optional
+import logging
 
 import pandas as pd
 import plotly.graph_objects as go
@@ -11,6 +12,8 @@ from plotly.subplots import make_subplots
 from pet_monitor.common import DATA_DIR, get_db_connection, ClientInfo, TrafficStats
 from pet_monitor.settings import TPLinkSettings, get_settings, RateLimiter
 from pet_monitor.tplink_scraper.tplink_interface import TPLinkInterface
+
+_logger = logging.getLogger(__name__)
 
 
 SCHEMA_SQL = '''\
@@ -157,7 +160,7 @@ class TPLinkScraper():
             reservations = tplink.get_dhcp_static_reservations()
             traffic = tplink.get_traffic_stats()
         except Exception as e:
-            print(e)
+            _logger.error(e)
             return False
 
         devices = defaultdict(dict)
@@ -205,6 +208,7 @@ class TPLinkScraper():
             cur.execute(
                 'INSERT INTO client_info VALUES (?, ?, ?, ?, ?)', client)
             num_added += 1
+            _logger.info(f'Found new potential friend: {client.mac} ({client.client_name})')
         self.conn.commit()
 
         cur.execute("SELECT row_id, ip FROM client_info")
@@ -228,11 +232,8 @@ class TPLinkScraper():
                 cur.execute(
                     'INSERT INTO client_traffic (client_id, is_connected) VALUES (?, 0)', (row_id,))
         self.conn.commit()
-        print(f'num_updated: {num_updated}')
-        print(f'num_added: {num_added}')
-        print(f'num_traffic: {num_traffic}')
-        print(f'num_connected: {num_connected}')
-        print(f'num_total: {num_total}')
+        _logger.debug(f'Scrape Succeeded: updated={num_updated}, added={num_added}, traffic={num_traffic}, '
+                      f'connected={num_connected}, total={num_total}')
         return True
 
 

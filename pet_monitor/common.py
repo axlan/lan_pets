@@ -2,11 +2,12 @@
 import os
 from pathlib import Path
 import sqlite3
+import time
 from typing import Collection, Iterable, NamedTuple, Optional
-
+import logging
 
 DATA_DIR = Path(__file__).parents[1].resolve() / 'data'
-
+_logger = logging.getLogger(__name__)
 
 class ClientInfo(NamedTuple):
     mac: str
@@ -33,13 +34,13 @@ def get_db_connection(db_path: Path, sql_schema: str) -> sqlite3.Connection:
     conn = sqlite3.connect(db_path)
     conn.execute("PRAGMA foreign_keys = 1")
     if db_needs_init:
-        print(f"Database '{db_path}' does not exist. Creating from schema file...")
+        _logger.debug(f"Database '{db_path}' does not exist. Creating from schema file...")
         conn = sqlite3.connect(db_path)
         conn.execute("PRAGMA foreign_keys = 1")
         cursor = conn.cursor()
         cursor.executescript(sql_schema)
         conn.commit()
-        print(f"Database '{db_path}' created successfully.")
+        _logger.debug(f"Database '{db_path}' created successfully.")
     return conn
 
 
@@ -49,3 +50,13 @@ def delete_missing_names(conn: sqlite3.Connection, table: str, names: Collection
     QUERY = f"DELETE FROM {table} WHERE name NOT IN ({place_holders})"
     cur.execute(QUERY, tuple(n for n in names))
     conn.commit()
+
+
+class LoggingTimeFilter(logging.Filter):
+    def filter(self, record):
+        record.unix_time = int(time.time())
+        return True
+
+
+def get_loggers_by_prefix(prefix: str) -> list[logging.Logger]:
+    return [logging.getLogger(name) for name in logging.root.manager.loggerDict if name.startswith(prefix)]

@@ -70,9 +70,11 @@ def manage_pets(request):
     # ["Rail Blazer", "Sad", "Hi"]
     # '''
     friend_rows = []
+    pet_ai = PetAi(_MONITOR_SETTINGS.pet_ai_settings)
     for pet in PetData.objects.iterator():
         avatar_path = get_pet_avatar(_STATIC_PATH, pet.device_type, pet.mac_address)
-        friend_rows.append(f'["{pet.name}", "Happy", "{greetings[randrange(len(greetings))]}", "{avatar_path.name}"]')
+        mood = pet_ai.get_moods([pet.name])[pet.name].name
+        friend_rows.append(f'["{pet.name}", "{mood.title()}", "{greetings[randrange(len(greetings))]}", "{avatar_path.name}"]')
     friend_rows = ',\n'.join(friend_rows)
 
     # Format scraper results into JS table.

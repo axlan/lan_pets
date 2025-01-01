@@ -2,10 +2,12 @@ from collections import defaultdict
 from enum import IntEnum
 import random
 from typing import Iterable, NamedTuple
+import logging
 
 from pet_monitor.common import DATA_DIR, delete_missing_names, get_db_connection
-from pet_monitor.settings import PetAISettings, RateLimiter
+from pet_monitor.settings import PetAISettings, RateLimiter, MoodAlgorithm
 
+_logger = logging.getLogger(__name__)
 
 class MoodAttributes(NamedTuple):
     rx_bps: float
@@ -16,15 +18,15 @@ class MoodAttributes(NamedTuple):
 
 
 class Moods(IntEnum):
-    HAPPY = 1
-    SAD = 2
-    ANGRY = 3
-    SLEEPY = 4
-    HUNGRY = 5
-    THIRSTY = 6
-    PLAYFUL = 7
-    SICK = 8
-    DEAD = 9
+    JOLLY = 1
+    SASSY = 2
+    CALM = 3
+    MODEST = 4
+    DREAMY = 5
+    IMPISH = 6
+    SNEAKY = 7
+    SHY = 8
+
 
 class Relationships(IntEnum):
     FRIENDS = 1
@@ -49,8 +51,11 @@ CREATE TABLE pet_relationships (
 );
 '''
 
-def _get_mood(stats: MoodAttributes):
-    return Moods.HAPPY
+def _get_mood(stats: MoodAttributes, settings: PetAISettings):
+    if settings.mood_algorithm is MoodAlgorithm.RANDOM:
+        return random.choice(tuple(m for m in Moods))
+    else:
+        return Moods.JOLLY
 
 class PetAi:
 
@@ -60,7 +65,7 @@ class PetAi:
         self.conn = get_db_connection(DATA_DIR / 'pet_moods.sqlite3', SCHEMA_SQL)
 
     def get_moods(self, names: Iterable[str]) -> dict[str, Moods]:
-        moods = {n:Moods.HAPPY for n in names}
+        moods = {n:Moods.JOLLY for n in names}
         cur = self.conn.cursor()
         NAME_STRS = ','.join([f'"{n}"' for n in names])
         QUERY = f"""
@@ -115,10 +120,13 @@ class PetAi:
         
         online_pets = { k for k, p in pets.items() if p.on_line}
         all_relationships = self.get_relationships(online_pets)
+        previous_moods = self.get_moods(pets)
 
         for name, stats in pets.items():
             # TODO: Update moods based on attributes.
-            mood = _get_mood(stats)
+            mood = _get_mood(stats, self.settings)
+            if mood is not previous_moods[name]:
+                _logger.info(f'{name} went from {previous_moods[name].name} to {mood.name}')
             self.conn.execute(
                 '''INSERT INTO pet_moods(name,mood) VALUES(?, ?)
                     ON CONFLICT(name) DO UPDATE SET mood=?;''', (name, int(mood), int(mood)))
@@ -131,14 +139,14 @@ class PetAi:
                 if pet_relationships is not None and len(pet_relationships) > 0:
                     if random.uniform(0, 1) < self.settings.prob_lose_friend:
                         breakup_name = random.choice([n for n in pet_relationships])
-                        print(f'Breaking up {name} and {breakup_name}')
-                        pet_relationships.pop(breakup_name)
+                        _logger.info(f'Breaking up {name} and {breakup_name}')
+                        all_relationships[name].pop(breakup_name)
                         all_relationships[breakup_name].pop(name)
                         names = self.get_ordered_names(name, breakup_name)
                         self.conn.execute("""
                                     DELETE FROM pet_relationships
-                                    WHERE row_id IN (
-                                        SELECT a.row_id FROM pet_relationships a
+                                    WHERE rowid IN (
+                                        SELECT a.rowid FROM pet_relationships a
                                         JOIN pet_moods name1
                                             ON name1.row_id = name1_id
                                         JOIN pet_moods name2
@@ -151,7 +159,7 @@ class PetAi:
                     prob_new_friend = max(self.settings.prob_make_friend - self.settings.prob_make_friend_per_friend_drop , 0) 
                     if random.uniform(0, 1) < prob_new_friend:
                         friend_name = random.choice([n for n in potentials])
-                        print(f'Friendship between {name} and {friend_name}')
+                        _logger.info(f'Friendship between {name} and {friend_name}')
                         all_relationships[name][friend_name] = Relationships.FRIENDS
                         all_relationships[friend_name][name] = Relationships.FRIENDS
                         names = self.get_ordered_names(name, friend_name)

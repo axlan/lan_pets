@@ -1,19 +1,27 @@
 
 
+from enum import Enum, auto
 import time
 from typing import NamedTuple, Optional
+import logging
 
 from pet_monitor.common import ClientInfo
 
+_logger = logging.getLogger(__name__)
 
 class PingerSettings(NamedTuple):
     update_period_sec = 10.0
 
 
+class MoodAlgorithm(Enum):
+    RANDOM = auto()
+
+
 class PetAISettings(NamedTuple):
-    update_period_sec = 60.0
+    update_period_sec = 30.0
 
     # Mood parameters.
+    mood_algorithm = MoodAlgorithm.RANDOM
     history_window_sec = 60.0*60.0*24.0*7.0
     uptime_ratio_for_available = 0.5
     average_bytes_per_sec_for_loud = 500
@@ -21,9 +29,9 @@ class PetAISettings(NamedTuple):
     # Interaction parameters.
     prob_message = 0.5
     prob_message_friend = 0.75
-    prob_make_friend = 0.1
+    prob_make_friend = 0.5
     prob_make_friend_per_friend_drop = 0.01
-    prob_lose_friend = 0.02
+    prob_lose_friend = 0.5
 
 
 class TPLinkSettings(NamedTuple):
@@ -83,9 +91,9 @@ def get_settings() -> Settings:
         if hasattr(secret_settings, 'tplink_settings'):
             tplink_settings = secret_settings.tplink_settings
         else:
-            print("No tplink settings to load.")
+            _logger.debug("No tplink settings to load.")
     except ModuleNotFoundError:
-        print("No secret settings to load.")
+        _logger.warning("No secret settings to load.")
 
     return Settings(tplink_settings=tplink_settings)
 

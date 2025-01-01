@@ -4,7 +4,9 @@ import urllib.parse
 
 from Crypto.PublicKey import RSA
 from pet_monitor.tplink_scraper.custom_rsa import new
+import logging
 
+_logger = logging.getLogger(__name__)
 
 class TPLinkInterface:
     COMMON_HEADERS = {
@@ -52,7 +54,7 @@ class TPLinkInterface:
         # <RequestsCookieJar[<Cookie sysauth=6242d6a547a07bac57adfd7397ff3da2 for 192.168.1.1/cgi-bin/luci>]>
         if 'error_code' not in resp or resp['error_code'] != "0":
             raise RuntimeError(f'Authentication failed: "{resp}"')
-        print('Authentication suceeded')
+        _logger.debug('Authentication suceeded')
         self.stok = resp['result']['stok']
 
     def _api_query(self, admin_path, data='{"method":"get","params":{}}'):

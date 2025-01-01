@@ -1,4 +1,5 @@
 *.sqlite3
 *.sqlite3-journal
 *.png
+*.txt
 !mac_lookup.sqlite3

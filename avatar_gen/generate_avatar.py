@@ -150,7 +150,7 @@ def get_pet_avatar(out_dir: Path, device_type: str, mac_address: str) -> Path:
             selections.append(Selection(
                 choice.name,
                 item_idx=r.randint(0, choice.item_idx-1),  # type: ignore
-                disable=choice.name=='background'
+                disable=choice.name == 'background'
             ))
 
     generator.generate_image(avatar_path, selections, mac_address)

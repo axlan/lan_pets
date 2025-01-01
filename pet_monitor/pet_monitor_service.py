@@ -2,7 +2,7 @@
 # TODO: Add concept of plugins for gathering different types of data. This can be enabled on a per device basis.
 # TODO: For now assume TPLink scraper to get device IP's.
 
-
+import logging
 import os
 import time
 
@@ -16,7 +16,7 @@ os.environ.setdefault("DJANGO_SETTINGS_MODULE", "lan_pets.settings")
 apps.populate(INSTALLED_APPS)
 from manage_pets.models import PetData
 
-from pet_monitor.common import get_empty_traffic
+from pet_monitor.common import LoggingTimeFilter, get_empty_traffic, DATA_DIR, get_loggers_by_prefix
 from pet_monitor.pet_ai import MoodAttributes, PetAi
 from pet_monitor.settings import get_settings
 from pet_monitor.ping import Pinger, PingerItem
@@ -24,6 +24,20 @@ from pet_monitor.tplink_scraper.scraper import TPLinkScraper
 
 
 def main():
+    fh = logging.FileHandler(DATA_DIR / 'monitor_service.txt')
+    fh.setLevel(logging.INFO)
+    fh.addFilter(LoggingTimeFilter())
+    fh.setFormatter(logging.Formatter('%(unix_time)s: %(message)s'))
+    
+    ch = logging.StreamHandler()
+    ch.setLevel(logging.DEBUG)
+    ch.setFormatter(logging.Formatter('%(asctime)s - %(name)s - %(levelname)s - %(message)s'))
+
+    for logger in get_loggers_by_prefix('pet_monitor.'):
+        logger.addHandler(ch)
+        logger.addHandler(fh)
+        logger.setLevel(logging.DEBUG)
+
     settings = get_settings()
     tplink_scraper = None if settings.tplink_settings is None else TPLinkScraper(settings.tplink_settings)
     pinger = Pinger(settings.pinger_settings)

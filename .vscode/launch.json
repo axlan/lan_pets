@@ -5,6 +5,13 @@
     "version": "0.2.0",
     "configurations": [
         {
+            "name": "pet_monitor_service",
+            "type": "debugpy",
+            "request": "launch",
+            "module": "pet_monitor.pet_monitor_service",
+            "justMyCode": false
+        },
+        {
             "name": "Python Debugger: Current File",
             "type": "debugpy",
             "request": "launch",
