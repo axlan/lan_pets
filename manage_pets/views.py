@@ -37,22 +37,6 @@ def _load_client_info(tplink_scraper):
     return tp_link_info
 
 
-def home(request):
-    return HttpResponse("Hello, Django!")
-
-
-def hello_there(request, name):
-    form = LogMessageForm(request.POST or None)
-
-    if request.method == "POST" and form.is_valid():
-        message = form.save(commit=False)
-        message.log_date = datetime.now()
-        message.save()
-        return redirect("home")
-    else:
-        return render(request, "manage_pets/hello_there.html", {"form": form})
-
-
 @csrf_exempt
 def manage_pets(request):
     if request.method == "POST":
@@ -124,7 +108,7 @@ def view_pet(request, name):
         tp_link_info = _load_client_info(tplink_scraper).get(pet_data.mac_address, ClientInfo('Unknown'))
         if tplink_scraper is None:
             tp_link_traffic_info = TrafficStats(0, 0, 0, 0, 0)
-            traffic_data_webp = base64.b64encode(open(_STATIC_PATH / 'no_data.webp', 'rb').read()).decode('utf-8')
+            traffic_data_webp = None
         else:
             tp_link_traffic_info = tplink_scraper.load_mean_bps([pet_data.mac_address]).get(
                 pet_data.mac_address, TrafficStats(0, 0, 0, 0, 0))

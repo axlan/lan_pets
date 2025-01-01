@@ -4,6 +4,7 @@
 
 <head>
   <title>{{pet_data.name}}</title>
+  <link rel="shortcut icon" type="image/png" href="{% static 'favicon.ico' %}"/>
 
   <link href='https://fonts.googleapis.com/css?family=Silkscreen' rel='stylesheet'>
   <style>
@@ -169,10 +170,14 @@
     {% endautoescape %}
     </div>
     <br>
+    {% if traffic_data_webp != None %}
     <h1 style="text-align: center;">Traffic</h1>
     <img src="data:image/png;base64, {{traffic_data_webp}}" alt="Traffic Data Plot" />
+    {% endif %}
+    {% if up_time_webp != None %}
     <h1 style="text-align: center;">Up Time</h1>
     <img src="data:image/png;base64, {{up_time_webp}}" alt="Up Time Plot" />
+    {% endif %}
     <br>
     <form action="/delete_pet/{{pet_data.name}}" method="post" onSubmit="return onDelete()">
       <input type="submit" value="Delete">
