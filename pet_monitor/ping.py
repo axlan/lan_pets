@@ -118,7 +118,9 @@ class Pinger:
     def _check_host(pet: PingerItem) -> bool:
         try:
             host = ping(pet.hostname, count=1, timeout=1, privileged=False)
-            return host.packets_sent == host.packets_received
+            is_online = host.packets_sent == host.packets_received
+            # print(f'ping {pet} {is_online}')
+            return is_online
         except Exception:
             return False
 

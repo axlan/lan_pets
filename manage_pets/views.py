@@ -5,13 +5,10 @@ import time
 from pathlib import Path
 from random import randrange
 
-from django.http import HttpResponse
 from django.shortcuts import redirect, render
-from django.utils.timezone import datetime
 from django.views.decorators.csrf import csrf_exempt
 
 from avatar_gen.generate_avatar import get_pet_avatar
-from manage_pets.forms import LogMessageForm
 from manage_pets.models import PetData
 from pet_monitor.pet_ai import PetAi
 from pet_monitor.ping import Pinger
@@ -116,7 +113,7 @@ def view_pet(request, name):
                 pet_data.mac_address, since_timestamp=history_start_time)).decode('utf-8')
         mean_uptime = pinger.load_availability_mean([pet_data.name],
                                                     since_timestamp=history_start_time).get(pet_data.name)
-        relationships = pet_ai.get_relationships([pet_data.name])[pet_data.name]
+        relationships = pet_ai.get_relationships([pet_data.name]).get_relationships(pet_data.name)
         relationships = {n: m.name for n, m in relationships.items()}
         mood = pet_ai.get_moods([pet_data.name])[pet_data.name]
         up_time_webp = base64.b64encode(

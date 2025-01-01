@@ -31,22 +31,4 @@ Add more stuff to relationship view, like moods as a color with legend
 Add different mood algorithms
 Chat bubbles for messages
 Make relationship logic more involved
-Create log of activity
 Have paginated view of activity in reverse chronological order
-
-
-2025-01-01 07:29:57,753 - pet_monitor.pet_ai - INFO - Zephurus went from SHY to MODEST
-2025-01-01 07:29:57,760 - pet_monitor.pet_ai - INFO - Friendship between Zephurus and Pixel 8
-2025-01-01 07:29:57,770 - pet_monitor.pet_ai - INFO - Pixel 8 went from IMPISH to MODEST
-2025-01-01 07:30:28,364 - pet_monitor.pet_ai - INFO - Zephurus went from MODEST to SNEAKY
-2025-01-01 07:30:28,371 - pet_monitor.pet_ai - INFO - Breaking up Zephurus and Pixel 8
-Traceback (most recent call last):
-  File "<frozen runpy>", line 198, in _run_module_as_main
-  File "<frozen runpy>", line 88, in _run_code
-  File "/workspaces/lan_pets/pet_monitor/pet_monitor_service.py", line 104, in <module>
-    main()
-  File "/workspaces/lan_pets/pet_monitor/pet_monitor_service.py", line 98, in main
-    pet_ai.update(mood_data)
-  File "/workspaces/lan_pets/pet_monitor/pet_ai.py", line 151, in update
-    all_relationships[breakup_name].pop(name)
-KeyError: 'Zephurus'
