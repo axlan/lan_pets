@@ -24,6 +24,7 @@ http://127.0.0.1:8000/view_relationships
 
 TODO:
 Add header with links to manage pets, history and relationships
+Change description to support links that use ip address
 Identifiers, host, MAC, mDNS?
 Figure out sensors for each device (ping, http, custom, SNMP)
 Any way to better abstract the router info dump?
