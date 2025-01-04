@@ -60,7 +60,9 @@ def manage_pets(request):
     # '''
     friend_rows = []
     pet_ai = PetAi(_MONITOR_SETTINGS.pet_ai_settings)
+    reserved_macs:set[str] = set()
     for pet in PetData.objects.iterator():
+        reserved_macs.add(pet.mac_address)
         avatar_path = get_pet_avatar(_STATIC_PATH, pet.device_type, pet.mac_address)
         mood = pet_ai.get_moods([pet.name])[pet.name].name
         friend_rows.append(
@@ -76,6 +78,9 @@ def manage_pets(request):
         rows = []
         tp_link_info = _load_client_info(tplink_scraper)
         for info in tp_link_info.values():
+            # Skip entries that are already saved
+            if info.mac in reserved_macs:
+                continue
             record = [info.client_name, info.description, info.ip, info.mac]
             values = ['"?"' if r is None else f'"{r}"' for r in record]
             values = ",".join(values)

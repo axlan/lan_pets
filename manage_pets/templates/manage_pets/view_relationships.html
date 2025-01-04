@@ -12,13 +12,14 @@
 
     <style type="text/css">
       #mynetwork {
-        width: 600px;
-        height: 400px;
+        width: 1000px;
+        height: 800px;
         border: 1px solid lightgray;
       }
     </style>
   </head>
   <body>
+    {% include "./header.html" with nav="manage_pets.html" %}
     <div id="mynetwork"></div>
 
     <h2 id="eventSpanHeading"></h2>

@@ -136,6 +136,7 @@
 </script>
 
 <body>
+  {% include "./header.html" with nav="manage_pets.html" %}
     <h1 style="text-align: center;">{{pet_data.name}}</h1>
     <div style="border: thick double #32a1ce;float:left;">
         <h2 >MAC</h2>
@@ -156,7 +157,7 @@
         <h2 >Mood</h2>
         <p>{{mood}}</p>
         <h2 >Relationships</h2>
-        {% for name, relationship in relationships.items %} 
+        {% for name, relationship in relationships.items %}
           <li><a href="/view_pet/{{name}}">{{name}} - {{relationship}}</a></li>
         {% endfor %}
     </div>
@@ -179,6 +180,9 @@
     <img src="data:image/png;base64, {{up_time_webp}}" alt="Up Time Plot" />
     {% endif %}
     <br>
+
+    <a href="/view_history/{{pet_data.name}}">View History</a>
+
     <form action="/delete_pet/{{pet_data.name}}" method="post" onSubmit="return onDelete()">
       <input type="submit" value="Delete">
     </form>

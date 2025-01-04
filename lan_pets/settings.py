@@ -127,5 +127,3 @@ STATICFILES_DIRS = [
     BASE_DIR / "data/static",
     BASE_DIR / "static"
 ]
-
-LOGGING = {}

@@ -21,15 +21,17 @@ python -m pet_monitor.pet_monitor_service
 
 http://127.0.0.1:8000/
 http://127.0.0.1:8000/view_relationships
+http://127.0.0.1:8000/view_history
 
 TODO:
-Add header with links to manage pets, history and relationships
 Change description to support links that use ip address
+Add pet conversations
+Chat bubbles for pet conversations
 Identifiers, host, MAC, mDNS?
 Figure out sensors for each device (ping, http, custom, SNMP)
 Any way to better abstract the router info dump?
 Add more stuff to relationship view, like moods as a color with legend
 Add different mood algorithms
-Chat bubbles for messages
 Make relationship logic more involved
 Have paginated view of activity in reverse chronological order
+Log Django errors

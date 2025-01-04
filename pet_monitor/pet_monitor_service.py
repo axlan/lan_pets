@@ -24,6 +24,8 @@ from pet_monitor.ping import Pinger, PingerItem
 from pet_monitor.settings import get_settings
 from pet_monitor.tplink_scraper.scraper import TPLinkScraper
 
+_logger = logging.getLogger('pet_monitor.pet_monitor_service')
+
 
 def main():
     fh = logging.FileHandler(CONSOLE_LOG_FILE)
@@ -40,15 +42,15 @@ def main():
     logger_group.addHandler(fh)
     logger_group.setLevel(logging.DEBUG)
 
-    settings = get_settings()
-    tplink_scraper = None if settings.tplink_settings is None else TPLinkScraper(settings.tplink_settings)
-    pinger = Pinger(settings.pinger_settings)
-    pet_ai = PetAi(settings.pet_ai_settings)
-    monitors = {pinger, pet_ai}
-    if tplink_scraper is not None:
-        monitors.add(tplink_scraper)
-
     try:
+        settings = get_settings()
+        tplink_scraper = None if settings.tplink_settings is None else TPLinkScraper(settings.tplink_settings)
+        pinger = Pinger(settings.pinger_settings)
+        pet_ai = PetAi(settings.pet_ai_settings)
+        monitors = {pinger, pet_ai}
+        if tplink_scraper is not None:
+            monitors.add(tplink_scraper)
+
         while True:
             if not any((m.rate_limiter.is_ready() for m in monitors)):
                 time.sleep(settings.main_loop_sleep_sec)
@@ -98,7 +100,10 @@ def main():
                 pet_ai.update(mood_data)
     except KeyboardInterrupt:
         pass
+    except Exception:
+        _logger.error('Unhandled Exception:', exc_info=True)
 
+    _logger.debug('Monitor shutdown')
 
 if __name__ == '__main__':
     main()

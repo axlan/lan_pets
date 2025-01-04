@@ -3,7 +3,7 @@
 <html>
 
 <head>
-  <title>Tamagotchi</title>
+  <title>Pet Manager</title>
   <!-- TODO: Host these locally? -->
   <!-- Include Choices CSS -->
   <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/choices.js/public/assets/styles/choices.min.css" />
@@ -64,7 +64,7 @@
         row.style.backgroundColor = color
         row.style.border = '5px solid ' + color
         row.classList.add('selectable_row');
-    
+
         table_target.appendChild(row)
       })
     }
@@ -251,6 +251,8 @@
 </head>
 
 <body>
+  {% include "./header.html" with nav="manage_pets.html" %}
+
   <caption>Friends</caption>
   <div class="table" id="table-friends">
   </div>
