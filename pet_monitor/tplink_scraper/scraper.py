@@ -98,7 +98,8 @@ class TPLinkScraper():
                 bps_col = f'{col}_bps'
                 mac_df.loc[:, bps_col] = mac_df[col].diff()
                 mac_df.loc[:, bps_col] /= durations
-                mac_df.loc[mac_df.index[0], bps_col] = 0
+                if len(mac_df) > 0:
+                    mac_df.loc[mac_df.index[0], bps_col] = 0
                 mac_df.loc[mac_df[bps_col] < 0, bps_col] = 0
             results[mac] = mac_df
         return results

@@ -27,7 +27,7 @@
     <script type="text/javascript">
       // create an array with nodes
       var nodes = new vis.DataSet([
-      {% for name, mood, icon in pet_data %} 
+      {% for name, mood, icon in pet_data %}
         { id: "{{name}}", label: "{{name}}", title: "{{mood}}", shape: "circularImage", image: "{% static icon %}" },
       {% endfor %}
       ]);
@@ -52,8 +52,10 @@
       var network = new vis.Network(container, data, options);
 
       network.on("click", function (params) {
-        let pet_name = params.nodes[0]
-        window.location = '/view_pet/'+pet_name
+        if (params.nodes.length > 0) {
+          let pet_name = params.nodes[0]
+          window.location = '/view_pet/'+pet_name
+        }
       });
     </script>
   </body>
