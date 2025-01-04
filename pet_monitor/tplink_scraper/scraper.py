@@ -135,6 +135,10 @@ class TPLinkScraper():
         df = self._load_bps_df(mac_addresses, since_timestamp)
         for mac in mac_addresses:
             mac_df = df[df['mac'] == mac].dropna()
+            if len(mac_df) < 2:
+                results[mac] = TrafficStats(0, 0, 0, 0, 0)
+                continue
+
             metrics = {}
             metrics['timestamp'] = mac_df['timestamp'].iloc[-1]
             durations = mac_df['timestamp'].diff()
