@@ -18,7 +18,7 @@ os.environ.setdefault("DJANGO_SETTINGS_MODULE", "lan_pets.settings")
 apps.populate(INSTALLED_APPS)
 from manage_pets.models import PetData
 from pet_monitor.common import (CONSOLE_LOG_FILE, LoggingTimeFilter,
-                                get_empty_traffic, get_loggers_by_prefix)
+                                get_empty_traffic)
 from pet_monitor.pet_ai import MoodAttributes, PetAi
 from pet_monitor.ping import Pinger, PingerItem
 from pet_monitor.settings import get_settings
@@ -35,10 +35,10 @@ def main():
     ch.setLevel(logging.DEBUG)
     ch.setFormatter(logging.Formatter('%(asctime)s - %(name)s - %(levelname)s - %(message)s'))
 
-    for logger in get_loggers_by_prefix('pet_monitor.'):
-        logger.addHandler(ch)
-        logger.addHandler(fh)
-        logger.setLevel(logging.DEBUG)
+    logger_group = logging.getLogger('pet_monitor')
+    logger_group.addHandler(ch)
+    logger_group.addHandler(fh)
+    logger_group.setLevel(logging.DEBUG)
 
     settings = get_settings()
     tplink_scraper = None if settings.tplink_settings is None else TPLinkScraper(settings.tplink_settings)

@@ -65,7 +65,7 @@ class TPLinkScraper():
         else:
             cur.execute(QUERY + ';')
         for record in cur.fetchall():
-            client = ClientInfo(*record)
+            client = ClientInfo(*record[1:])
             info[client.mac] = client
         return info
 
@@ -208,7 +208,7 @@ class TPLinkScraper():
         for mac, device in devices.items():
             client = ClientInfo(mac, **device)
             cur.execute(
-                'INSERT INTO client_info VALUES (?, ?, ?, ?, ?)', client)
+                'INSERT INTO client_info(mac, is_reserved, ip, client_name, description) VALUES (?, ?, ?, ?, ?)', client)
             num_added += 1
             _logger.info(f'Found new potential friend: {client.mac} ({client.client_name})')
         self.conn.commit()

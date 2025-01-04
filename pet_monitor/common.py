@@ -58,7 +58,3 @@ class LoggingTimeFilter(logging.Filter):
     def filter(self, record):
         record.unix_time = int(time.time())
         return True
-
-
-def get_loggers_by_prefix(prefix: str) -> list[logging.Logger]:
-    return [logging.getLogger(name) for name in logging.root.manager.loggerDict if name.startswith(prefix)]
