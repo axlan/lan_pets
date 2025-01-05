@@ -16,23 +16,23 @@ class PingerSettings(NamedTuple):
 
 class MoodAlgorithm(Enum):
     RANDOM = auto()
+    ACTIVITY1 = auto()
 
 
 class PetAISettings(NamedTuple):
-    update_period_sec = 30.0
+    update_period_sec = 60.0 * 60.0
 
     # Mood parameters.
     mood_algorithm = MoodAlgorithm.RANDOM
-    history_window_sec = 60.0 * 60.0 * 24.0 * 7.0
+    history_window_sec = update_period_sec
     uptime_ratio_for_available = 0.5
-    average_bytes_per_sec_for_loud = 500
+    average_bytes_per_sec_for_loud = 10
 
     # Interaction parameters.
-    prob_message = 0.5
-    prob_message_friend = 0.75
-    prob_make_friend = 0.5
-    prob_make_friend_per_friend_drop = 0.01
-    prob_lose_friend = 0.5
+    prob_message_friend = 0.05
+    prob_make_friend = 0.02
+    prob_make_friend_per_friend_drop = 0.005
+    prob_lose_friend = 0.005
 
 
 class TPLinkSettings(NamedTuple):
