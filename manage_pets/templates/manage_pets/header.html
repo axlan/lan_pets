@@ -60,9 +60,15 @@
 <div class="header">
     <a href="#default" class="logo">Lan Pets</a>
     <div class="header-right">
-      <a class="active" href="/manage_pets">Manage</a>
-      <a href="/view_relationships">Relationships</a>
-      <a href="/view_history">History</a>
+      <a id="manage_pets" href="/manage_pets">Manage</a>
+      <a id="view_relationships" href="/view_relationships">Relationships</a>
+      <a id="view_history" href="/view_history">History</a>
     </div>
   </div>
 
+<script>
+    const element = document.getElementById("{{nav}}");
+    if (element != null) {
+        element.classList.add("active");
+    }
+</script>
