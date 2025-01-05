@@ -39,7 +39,7 @@ class TPLinkSettings(NamedTuple):
     router_ip: str
     username: str
     password: str
-    update_period_sec = 3600.0
+    update_period_sec = 60.0 * 10
 
 
 class Settings(NamedTuple):
