@@ -138,7 +138,14 @@ def view_pet(request, name):
                 pet_data.name,
                 since_timestamp=history_start_time)).decode('utf-8')
 
-        return render(request, "manage_pets/show_pet.html", {'pet_data': pet_data,
+        if pet_data.description is not None:
+            substitute_ip = 'IP_UNKNOWN' if tp_link_info.ip is None else tp_link_info.ip
+            description = pet_data.description.replace('{IP}', substitute_ip)
+        else:
+            description = None
+
+        return render(request, "manage_pets/view_pet.html", {'pet_data': pet_data,
+                                                             'description': description,
                                                              'router_info': tp_link_info,
                                                              'mood': mood.name,
                                                              'relationships': relationships,

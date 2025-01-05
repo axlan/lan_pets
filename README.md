@@ -24,7 +24,6 @@ http://127.0.0.1:8000/view_relationships
 http://127.0.0.1:8000/view_history
 
 TODO:
-Change description to support links that use ip address
 Add pet conversations
 Chat bubbles for pet conversations
 Identifiers, host, MAC, mDNS?

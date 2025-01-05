@@ -3,13 +3,14 @@
 <html lang="en-US">
   <head>
     <meta charset="utf-8" />
-    <title>Edit {{pet.name}} Description</title>
+    <title>Edit {{pet_data.name}} Description</title>
     <link rel="shortcut icon" type="image/png" href="{% static 'favicon.ico' %}"/>
   </head>
   <body>
     <form method="post">
       {% csrf_token %}
-      <textarea name="pet-description" cols="80" rows="25">{{ pet.description }}</textarea>
+      <textarea name="pet-description" cols="80" rows="25">{{ pet_data.description }}</textarea>
+      <p>Use {IP} to have the device's IP address substituted in (mainly for links).</p>
       <br>
       <input type="submit" value="Save" />
     </form>
