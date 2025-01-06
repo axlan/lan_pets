@@ -23,7 +23,7 @@ class PetAISettings(NamedTuple):
     update_period_sec = 60.0 * 60.0
 
     # Mood parameters.
-    mood_algorithm = MoodAlgorithm.RANDOM
+    mood_algorithm = MoodAlgorithm.ACTIVITY1
     history_window_sec = update_period_sec
     uptime_ratio_for_available = 0.5
     average_bytes_per_sec_for_loud = 10
