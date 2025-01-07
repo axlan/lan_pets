@@ -24,6 +24,7 @@ http://127.0.0.1:8000/view_relationships
 http://127.0.0.1:8000/view_history
 
 TODO:
+When pihole 6 is released, add integration into pihole API
 Add pet conversations
 Chat bubbles for pet conversations
 Identifiers, host, MAC, mDNS?
