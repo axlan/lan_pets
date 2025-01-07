@@ -110,7 +110,7 @@ class TPLinkScraper():
         df['timestamp'] = pd.to_datetime(df['timestamp'], unit='s', utc=True).dt.tz_convert(time_zone)
         df.set_index('timestamp', inplace=True)
         df = df.resample(sample_rate).mean()
-        x = df.index.values
+        x = df.index
         y1 = df['rx_bytes_bps']
         y2 = df['tx_bytes_bps']
 
@@ -124,6 +124,7 @@ class TPLinkScraper():
         # Set y-axes titles
         fig.update_yaxes(title_text="<b>Recieved Bytes/Second</b>", type="log", secondary_y=False)
         fig.update_yaxes(title_text="<b>Transmitted Bytes/Second</b>", type="log", secondary_y=True)
+        # fig.write_image('/tmp/scraper.png')
 
         fd = io.BytesIO()
         fig.write_image(fd, format='webp')
@@ -260,10 +261,7 @@ def main():
 
     print(scraper.load_mean_bps(['E2-2D-4F-4F-4F-0B', '10-E8-A7-CA-84-BB']))
 
-    # df = scraper.load_bps(['E2-2D-4F-4F-4F-0B'])['E2-2D-4F-4F-4F-0B']
-    # from plotly import express as px
-    # fig = px.line(df, x='timestamp', y=['rx_bytes_bps', 'tx_bytes_bps'])
-    # fig.write_image("/tmp/traffic.png")
+    scraper.generate_traffic_plot('44-AF-28-12-11-E6')
 
 
 if __name__ == '__main__':
