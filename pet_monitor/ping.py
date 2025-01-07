@@ -43,16 +43,17 @@ class Pinger:
     def load_current_availability(self, names: Iterable[str]) -> dict[str, bool]:
         results = {n: False for n in names}
         cur = self.conn.cursor()
-        cur.execute(
-            """
+        cur.execute("""
             SELECT n.name, r.is_connected
             FROM ping_results r
             JOIN ping_names n
             ON r.name_id = n.row_id
-            WHERE r.timestamp =(
-                SELECT MAX(timestamp)
+            WHERE r.rowid =(
+                SELECT rowid
                 FROM ping_results r2
                 WHERE r.name_id = r2.name_id
+                ORDER BY rowid DESC
+                LIMIT 1
             );""")
         results.update({r[0]: bool(r[1]) for r in cur.fetchall()})
         return results
