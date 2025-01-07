@@ -59,7 +59,7 @@ def _get_mood(stats: MoodAttributes, settings: PetAISettings) -> Moods:
     if settings.mood_algorithm is MoodAlgorithm.RANDOM:
         return random.choice(tuple(m for m in Moods))
     elif settings.mood_algorithm is MoodAlgorithm.ACTIVITY1:
-        present = stats.availability > settings.uptime_ratio_for_available
+        present = stats.availability > settings.uptime_percent_for_available
         high_rx = stats.rx_bps > settings.average_bytes_per_sec_for_loud
         high_tx = stats.tx_bps > settings.average_bytes_per_sec_for_loud
         return {
