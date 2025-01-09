@@ -9,3 +9,4 @@ kaleido
 gunicorn
 autopep8
 isort
+python-nmap

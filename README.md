@@ -23,8 +23,25 @@ http://127.0.0.1:8000/
 http://127.0.0.1:8000/view_relationships
 http://127.0.0.1:8000/view_history
 
-TODO:
+
+# Discovery
+
+- Router - MAC + IP + Hostname(DHCP) + Description(Static route table)
+- ARP+PING - MAC + IP 
+- NMAP - MAC(If on same LAN segment) + IP + Hostname(DNS)
+- mDNS (avahi-browse / avahi-resolve) - MAC + IP
+# Scanning
+
+- IP -> host: nslookup
+- host -> IP: dig / socket.gethostbyname
+- IP -> MAC/hostname/services: nmap
+- MAC <-> IP: arp 
+
+
+# TODO
 When pihole 6 is released, add integration into pihole API
+Handle case where device has mutliple NIC's
+Add mDNS + bespoke advertisement of device info
 Add pet conversations
 Chat bubbles for pet conversations
 Identifiers, host, MAC, mDNS?

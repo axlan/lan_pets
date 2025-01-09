@@ -42,8 +42,16 @@ class TPLinkSettings(NamedTuple):
     update_period_sec = 60.0 * 10
 
 
+class NMAPSettings(NamedTuple):
+    ip_ranges = '192.168.1.1-255'
+    use_sudo = True
+    ping_timeout = 1.0
+    time_between_scans = 60.0 * 10.0
+
+
 class Settings(NamedTuple):
     tplink_settings: Optional[TPLinkSettings] = None
+    nmap_settings: Optional[NMAPSettings] = NMAPSettings()
     hard_coded_clients: set[ClientInfo] = {
         ClientInfo(
             mac='44-AF-28-12-11-E6',
