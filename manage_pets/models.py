@@ -10,13 +10,7 @@ class PetData(models.Model):
     class PrimaryIdentifier(models.TextChoices):
         MAC = 'MAC', "MAC"
         HOST = 'HOST', "HOST"
-        MDNS = 'MDNS', "mDNS"
-
-    IDENTIFIER_MAP = {
-        PrimaryIdentifier.MAC: "mac_address",
-        PrimaryIdentifier.HOST: "TBD",
-        PrimaryIdentifier.MDNS: "TBD",
-    }
+        IP = 'IP', "IP"
 
     class DeviceType(models.TextChoices):
         PC = 'PC', "PC"
@@ -42,18 +36,9 @@ class PetData(models.Model):
         choices=DeviceType.choices,
         default=DeviceType.OTHER
     )
-    mac_address = models.CharField(
+    identifier_value = models.CharField(
         max_length=17,
-        unique=True,
-        validators=[
-            RegexValidator(
-                regex='^([0-9A-Fa-f]{2}[:-]){5}([0-9A-Fa-f]{2})$',
-                message='Enter a valid MAC address.',
-                code='invalid_mac_address'
-            ),
-        ],
-        help_text="Only required if identifier_type is 'MAC'.",
-        blank=True
+        unique=True
     )
 
     def __str__(self):

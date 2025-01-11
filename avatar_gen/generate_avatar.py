@@ -2,7 +2,7 @@ import json
 import random
 import sys
 from pathlib import Path
-from typing import NamedTuple
+from typing import NamedTuple, Optional
 
 from PIL import Image
 
@@ -124,8 +124,8 @@ class AvatarGen:
         combined_image.save(out_file)
 
 
-def get_pet_avatar(out_dir: Path, device_type: str, mac_address: str) -> Path:
-    avatar_file = device_type + '-' + mac_address + '.png'
+def get_pet_avatar(out_dir: Path, device_type: str, name:str, mac_address: Optional[str]) -> Path:
+    avatar_file = device_type + '-' + name + '.png'
     avatar_path = out_dir / avatar_file
     if avatar_path.exists():
         return avatar_path
@@ -142,7 +142,10 @@ def get_pet_avatar(out_dir: Path, device_type: str, mac_address: str) -> Path:
     generator = AvatarGen(_SCRIPT_PATH / avatar_dir)
 
     choices = generator.get_choices()
-    vendor_name = get_vendor_name(mac_address)
+    if mac_address:
+        vendor_name = get_vendor_name(mac_address)
+    else:
+        vendor_name = name
     r = random.Random(vendor_name)
     selections = []
     # No color support for asaha

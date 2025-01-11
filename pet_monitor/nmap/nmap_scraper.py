@@ -80,7 +80,7 @@ class NMAPScraper():
                     mac = None
                     host_name = None
                     if 'addresses' in result and 'mac' in result['addresses'] and len(result['addresses']['mac']) > 0:
-                        mac = result['addresses']['mac']
+                        mac = result['addresses']['mac'].replace(':', '-')
 
                     if 'hostnames' in result:
                         host_names = result['hostnames']

@@ -1,12 +1,12 @@
 import io
 from concurrent.futures import ThreadPoolExecutor
-from typing import Iterable, NamedTuple
+from typing import Generator, Iterable, NamedTuple
 
 import pandas as pd
 import plotly_express as px
 from icmplib import ping
 
-from pet_monitor.common import (DATA_DIR, delete_missing_names,
+from pet_monitor.common import (DATA_DIR, NetworkInterfaceInfo, delete_missing_names,
                                 get_db_connection)
 from pet_monitor.settings import PingerSettings, RateLimiter, get_settings
 
@@ -34,8 +34,29 @@ CREATE TABLE ping_results (
 '''
 
 
-class Pinger:
+def _check_host(address: str) -> bool:
+    try:
+        host = ping(address, count=1, timeout=1, privileged=False)
+        is_online = host.packets_sent == host.packets_received
+        # print(f'ping {pet} {is_online}')
+        return is_online
+    except Exception:
+        return False
 
+
+def _ping_in_parallel(hosts: Iterable[tuple[str, str]]) -> Generator[tuple[tuple[str, str], bool], None, None]:
+    with ThreadPoolExecutor() as executor:
+        try:
+            names, addresses = zip(*hosts)
+        # No entries
+        except ValueError:
+            return
+
+        for name, is_online in zip(names, executor.map(_check_host, addresses)):
+            yield name, is_online
+
+
+class Pinger:
     def __init__(self, settings: PingerSettings) -> None:
         self.rate_limiter = RateLimiter(settings.update_period_sec)
         self.conn = get_db_connection(DATA_DIR / 'ping_results.sqlite3', SCHEMA_SQL)
@@ -115,39 +136,41 @@ class Pinger:
             availability[name] = 0.0 if result[0] is None else result[0]
         return availability
 
-    @staticmethod
-    def _check_host(pet: PingerItem) -> bool:
-        try:
-            host = ping(pet.hostname, count=1, timeout=1, privileged=False)
-            is_online = host.packets_sent == host.packets_received
-            # print(f'ping {pet} {is_online}')
-            return is_online
-        except Exception:
-            return False
+    def is_ready(self):
+        return self.rate_limiter.is_ready()
 
-    def update(self, pets: list[PingerItem]) -> None:
+    def update(self, pets: dict[str, NetworkInterfaceInfo]) -> None:
         if not self.rate_limiter.get_ready():
             return
 
+        names = list(pets.keys())
+
         # Clear deleted pets
-        delete_missing_names(self.conn, 'ping_names', [p.name for p in pets])
+        delete_missing_names(self.conn, 'ping_names', names)
+
+        hosts = set()
+        for name, device in pets.items():
+            if device.dns_hostname is not None:
+                hosts.add((name, device.dns_hostname))
+            elif device.ip is not None:
+                hosts.add((name, device.ip))
+
 
         # Ideally, don't block on this. Leaving the scope waits for all threads to finish.
-        with ThreadPoolExecutor() as executor:
-            for pet, is_online in zip(pets, executor.map(self._check_host, pets)):
+        for name, is_online in _ping_in_parallel(hosts):
+            cur = self.conn.execute(
+                "SELECT row_id FROM ping_names WHERE name = ?", (name,))
+            result = cur.fetchone()
+            if result is None:
                 cur = self.conn.execute(
-                    "SELECT row_id FROM ping_names WHERE name = ?", (pet.name,))
-                result = cur.fetchone()
-                if result is None:
-                    cur = self.conn.execute(
-                        'INSERT INTO ping_names (name) VALUES (?)', (pet.name,))
-                    self.conn.commit()
-                    name_id = cur.lastrowid
-                else:
-                    name_id = result[0]
-                self.conn.execute(
-                    'INSERT INTO ping_results (name_id, is_connected) VALUES (?, ?)', (name_id, is_online))
+                    'INSERT INTO ping_names (name) VALUES (?)', (name,))
                 self.conn.commit()
+                name_id = cur.lastrowid
+            else:
+                name_id = result[0]
+            self.conn.execute(
+                'INSERT INTO ping_results (name_id, is_connected) VALUES (?, ?)', (name_id, is_online))
+            self.conn.commit()
 
 
 def main():

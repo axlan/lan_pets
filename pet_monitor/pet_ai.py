@@ -165,6 +165,9 @@ class PetAi:
     def get_ordered_names(name1: str, name2: str) -> tuple[str, str]:
         return (name1, name2) if name1 < name2 else (name2, name1)
 
+    def is_ready(self):
+        return self.rate_limiter.is_ready()
+
     def update(self, pets: dict[str, MoodAttributes]) -> None:
         if not self.rate_limiter.get_ready():
             return

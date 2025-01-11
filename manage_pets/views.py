@@ -15,6 +15,7 @@ from django.views.decorators.csrf import csrf_exempt
 from avatar_gen.generate_avatar import get_pet_avatar
 from manage_pets.models import PetData
 from pet_monitor.common import CONSOLE_LOG_FILE
+from pet_monitor.network_scanner import NetworkScanner
 from pet_monitor.pet_ai import PetAi
 from pet_monitor.ping import Pinger
 from pet_monitor.settings import get_settings
@@ -54,49 +55,53 @@ def manage_pets(request):
         else:
             raise NotImplementedError('Only MAC supported.')
 
+    pets = list(PetData.objects.iterator())
+    pet_names = [p.name for p in pets]
+    scanner = NetworkScanner(_MONITOR_SETTINGS)
+    discovered_devices = scanner.get_discovered_devices()
+    mapped_pets = scanner.map_pets_to_devices(discovered_devices, pets)
+
     #     friend_rows = '''\
     # ["Nala", "Happy", "^._.^"],
     # ["Rail Blazer", "Sad", "Hi"]
     # '''
     friend_rows = []
     pet_ai = PetAi(_MONITOR_SETTINGS.pet_ai_settings)
-    reserved_macs:set[str] = set()
     for pet in PetData.objects.iterator():
-        reserved_macs.add(pet.mac_address)
-        avatar_path = get_pet_avatar(_STATIC_PATH, pet.device_type, pet.mac_address)
+        # Remove from list so they don't show up twice time.
+        discovered_devices.remove(mapped_pets[pet.name])
+        mac_address = mapped_pets[pet.name].mac
+        avatar_path = get_pet_avatar(_STATIC_PATH, pet.device_type, pet.name, mac_address)
         mood = pet_ai.get_moods([pet.name])[pet.name].name
         friend_rows.append(
             f'["{pet.name}", "{mood.title()}", "{greetings[randrange(len(greetings))]}", "{avatar_path.name}"]')
     friend_rows = ',\n'.join(friend_rows)
 
     # Format scraper results into JS table.
-    tplink_scraper = None if _MONITOR_SETTINGS.tplink_settings is None else TPLinkScraper(
-        _MONITOR_SETTINGS.tplink_settings)
-    router_results_exist = tplink_scraper is not None or len(_MONITOR_SETTINGS.hard_coded_clients) > 0
     router_rows = ''
-    if router_results_exist:
-        rows = []
-        tp_link_info = _load_client_info(tplink_scraper)
-        for info in tp_link_info.values():
-            # Skip entries that are already saved
-            if info.mac in reserved_macs:
-                continue
-            record = [info.client_name, info.description, info.ip, info.mac]
-            values = ['"?"' if r is None else f'"{r}"' for r in record]
-            values = ",".join(values)
-            rows.append(f'[{values}]')
-        router_rows = ',\n'.join(rows)
+    rows = []
+    for device in discovered_devices:
+        client_name = device.dns_hostname if device.dhcp_name is None else device.dhcp_name
+        record = [client_name, device.router_description, device.ip, device.mac]
+        values = ['"?"' if r is None else f'"{r}"' for r in record]
+        values = ",".join(values)
+        rows.append(f'[{values}]')
+    router_rows = ',\n'.join(rows)
 
     return render(request, "manage_pets/manage_pets.html",
-                  {'friend_rows': friend_rows, "router_results_exist": router_results_exist, "router_rows": router_rows})
+                  {'friend_rows': friend_rows, "router_results_exist": True, "router_rows": router_rows})
 
 
 def view_relationships(request):
     names:set[str] = set()
     icons:dict[str, str] = {}
-    for pet in PetData.objects.iterator():
+    pets = list(PetData.objects.iterator())
+    scanner = NetworkScanner(_MONITOR_SETTINGS)
+    mapped_pets = scanner.map_pets_to_devices(scanner.get_discovered_devices(), pets)
+    for pet in pets:
         names.add(pet.name)
-        icons[pet.name] = get_pet_avatar(_STATIC_PATH, pet.device_type, pet.mac_address).name
+        mac_address = mapped_pets[pet.name].mac
+        icons[pet.name] = get_pet_avatar(_STATIC_PATH, pet.device_type, pet.name, mac_address).name
 
     pet_ai = PetAi(_MONITOR_SETTINGS.pet_ai_settings)
     relationships = pet_ai.get_all_relationships()
@@ -114,20 +119,21 @@ def view_pet(request, name):
     else:
         pinger = Pinger(_MONITOR_SETTINGS.pinger_settings)
         pet_ai = PetAi(_MONITOR_SETTINGS.pet_ai_settings)
-        tplink_scraper = None if _MONITOR_SETTINGS.tplink_settings is None else TPLinkScraper(
-            _MONITOR_SETTINGS.tplink_settings)
         pet_data = matching_objects[0]
-        avatar_path = get_pet_avatar(_STATIC_PATH, pet_data.device_type, pet_data.mac_address)
+        scanner = NetworkScanner(_MONITOR_SETTINGS)
+        tplink_scraper = scanner.tplink_scraper
+        mapped_pets = scanner.map_pets_to_devices(scanner.get_discovered_devices(), [pet_data])
+        device_data = mapped_pets[name]
+        avatar_path = get_pet_avatar(_STATIC_PATH, pet_data.device_type, name, device_data.mac)
         history_start_time = time.time() - _MONITOR_SETTINGS.plot_data_window_sec
-        tp_link_info = _load_client_info(tplink_scraper).get(pet_data.mac_address, ClientInfo('Unknown'))
-        if tplink_scraper is None:
+        if tplink_scraper is None or device_data.mac is None:
             tp_link_traffic_info = TrafficStats(0, 0, 0, 0, 0)
             traffic_data_webp = None
         else:
-            tp_link_traffic_info = tplink_scraper.load_mean_bps([pet_data.mac_address]).get(
-                pet_data.mac_address, TrafficStats(0, 0, 0, 0, 0))
+            tp_link_traffic_info = tplink_scraper.load_mean_bps([device_data.mac]).get(
+                device_data.mac, TrafficStats(0, 0, 0, 0, 0))
             traffic_data_webp = base64.b64encode(tplink_scraper.generate_traffic_plot(
-                pet_data.mac_address, since_timestamp=history_start_time)).decode('utf-8')
+                device_data.mac, since_timestamp=history_start_time)).decode('utf-8')
         mean_uptime = pinger.load_availability_mean([pet_data.name],
                                                     since_timestamp=history_start_time).get(pet_data.name)
         relationships = pet_ai.get_relationships([pet_data.name]).get_relationships(pet_data.name)
@@ -139,14 +145,14 @@ def view_pet(request, name):
                 since_timestamp=history_start_time)).decode('utf-8')
 
         if pet_data.description is not None:
-            substitute_ip = 'IP_UNKNOWN' if tp_link_info.ip is None else tp_link_info.ip
+            substitute_ip = 'IP_UNKNOWN' if device_data.ip is None else device_data.ip
             description = pet_data.description.replace('{IP}', substitute_ip)
         else:
             description = None
 
         return render(request, "manage_pets/view_pet.html", {'pet_data': pet_data,
                                                              'description': description,
-                                                             'router_info': tp_link_info,
+                                                             'device_info': device_data,
                                                              'mood': mood.name,
                                                              'relationships': relationships,
                                                              'traffic_info': tp_link_traffic_info,
