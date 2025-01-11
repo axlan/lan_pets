@@ -74,10 +74,21 @@
       return regex.test(mac_str)
     }
 
+    function isIP(ip_str) {
+      var regex = /^((25[0-5]|(2[0-4]|1\d|[1-9]|)\d)\.?\b){4}$/;
+      return regex.test(ip_str)
+    }
+
     function onSubmit() {
       var pet_id = document.getElementById('pet-id')
-      if (!isMAC(pet_id.value)) {
+      var id_type = document.getElementById('id-type').value
+      if (id_type == 'MAC' && !isMAC(pet_id.value)) {
         alert("MAC address not valid")
+        pet_id.focus()
+        return false
+      }
+      else if (id_type == 'IP' && !isIP(pet_id.value)) {
+        alert("IP address not valid")
         pet_id.focus()
         return false
       }
@@ -269,7 +280,8 @@
         <label for="html">Identifier Type</label>
         <select name="id-type" id="id-type" onchange="setID()">
           <option value="MAC" selected>MAC</option>
-          <option value="Host">Host</option>
+          <option value="HOST">Host</option>
+          <option value="IP">IP</option>
         </select>
         <label for="html">Device Type</label>
         <select name="device-type" id="device-type">

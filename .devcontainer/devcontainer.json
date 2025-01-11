@@ -10,7 +10,7 @@
 	// Use 'forwardPorts' to make a list of ports inside the container available locally.
 	// "forwardPorts": [],
 	// Use 'postCreateCommand' to run commands after the container is created.
-	"postCreateCommand": "sudo apt-get update && sudo apt-get install -y nmap && pip3 install --user -r requirements.txt",
+	"postCreateCommand": "sudo apt-get update && sudo apt-get install -y nmap && pip3 install --user -r requirements.txt && echo 'net.ipv4.ping_group_range = 0 2147483647' | sudo tee -a /etc/sysctl.conf && sudo sysctl -p",
 	// Configure tool-specific properties.
 	"customizations": {
 		"vscode": {

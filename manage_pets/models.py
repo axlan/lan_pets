@@ -37,7 +37,7 @@ class PetData(models.Model):
         default=DeviceType.OTHER
     )
     identifier_value = models.CharField(
-        max_length=17,
+        max_length=64,
         unique=True
     )
 

@@ -53,7 +53,8 @@ class NetworkScanner:
                 for device in devices:
                     if result.ip == device.ip or result.mac == device.mac:
                         if result.host_name is not None:
-                            device = replace(device, dns_hostname = result.host_name)
+                            devices.remove(device)
+                            devices.add(replace(device, dns_hostname = result.host_name))
                         is_duplicate = True
                         break
 

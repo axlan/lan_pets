@@ -216,7 +216,7 @@ class PetAi:
                 if len(potentials) > 0:
                     prob_new_friend = max(
                         self.settings.prob_make_friend -
-                        self.settings.prob_make_friend_per_friend_drop,
+                        self.settings.prob_make_friend_per_friend_drop * len(pet_relationships),
                         0)
                     if random.uniform(0, 1) < prob_new_friend:
                         friend_name = random.choice([n for n in potentials])

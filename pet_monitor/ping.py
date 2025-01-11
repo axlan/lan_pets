@@ -38,9 +38,10 @@ def _check_host(address: str) -> bool:
     try:
         host = ping(address, count=1, timeout=1, privileged=False)
         is_online = host.packets_sent == host.packets_received
-        # print(f'ping {pet} {is_online}')
+        # print(f'ping {address} {is_online}')
         return is_online
-    except Exception:
+    except Exception as e:
+        # print(f'ping {address} {e}')
         return False
 
 
@@ -53,6 +54,7 @@ def _ping_in_parallel(hosts: Iterable[tuple[str, str]]) -> Generator[tuple[tuple
             return
 
         for name, is_online in zip(names, executor.map(_check_host, addresses)):
+            # print(f'ping {name} {is_online}')
             yield name, is_online
 
 

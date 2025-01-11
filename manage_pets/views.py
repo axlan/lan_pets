@@ -50,13 +50,9 @@ def manage_pets(request):
         device_type = PetData.DeviceType[request.POST.get('device-type')]
         pet_id = request.POST.get('pet-id')
         logger.info(f'Adding pet [name={name}, id_type={id_type}, id={pet_id}]')
-        if id_type == PetData.PrimaryIdentifier.MAC:
-            PetData.objects.create(name=name, identifier_type=id_type, mac_address=pet_id, device_type=device_type)
-        else:
-            raise NotImplementedError('Only MAC supported.')
+        PetData.objects.create(name=name, identifier_type=id_type, identifier_value=pet_id, device_type=device_type)
 
     pets = list(PetData.objects.iterator())
-    pet_names = [p.name for p in pets]
     scanner = NetworkScanner(_MONITOR_SETTINGS)
     discovered_devices = scanner.get_discovered_devices()
     mapped_pets = scanner.map_pets_to_devices(discovered_devices, pets)
@@ -68,9 +64,11 @@ def manage_pets(request):
     friend_rows = []
     pet_ai = PetAi(_MONITOR_SETTINGS.pet_ai_settings)
     for pet in PetData.objects.iterator():
+        device = mapped_pets[pet.name]
         # Remove from list so they don't show up twice time.
-        discovered_devices.remove(mapped_pets[pet.name])
-        mac_address = mapped_pets[pet.name].mac
+        if device in discovered_devices:
+            discovered_devices.remove(device)
+        mac_address = device.mac
         avatar_path = get_pet_avatar(_STATIC_PATH, pet.device_type, pet.name, mac_address)
         mood = pet_ai.get_moods([pet.name])[pet.name].name
         friend_rows.append(

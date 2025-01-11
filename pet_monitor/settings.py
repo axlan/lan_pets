@@ -30,9 +30,9 @@ class PetAISettings(NamedTuple):
 
     # Interaction parameters.
     prob_message_friend = 0.05
-    prob_make_friend = 0.02
-    prob_make_friend_per_friend_drop = 0.005
-    prob_lose_friend = 0.005
+    prob_make_friend = 0.2
+    prob_make_friend_per_friend_drop = 0.05
+    prob_lose_friend = 0.05
 
 
 class TPLinkSettings(NamedTuple):
