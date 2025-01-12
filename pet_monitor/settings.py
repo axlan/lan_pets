@@ -44,7 +44,7 @@ class TPLinkSettings(NamedTuple):
 
 class NMAPSettings(NamedTuple):
     ip_ranges = '192.168.1.1-255'
-    use_sudo = True
+    use_sudo = False
     ping_timeout = 1.0
     time_between_scans = 60.0 * 10.0
 

@@ -18,18 +18,18 @@ class NetworkScanner:
 
     def scan_network(self):
         # Router Scrape
-        if self.tplink_scraper and self.tplink_scraper.rate_limiter.is_ready():
+        if self.tplink_scraper:
             self.tplink_scraper.update()
 
         # NMAP
-        if self.nmap_scraper and self.nmap_scraper.rate_limiter.is_ready():
+        if self.nmap_scraper:
             self.nmap_scraper.update()
 
         # TODO: mDNS
 
     def is_ready(self):
-        ready = self.tplink_scraper is None or self.tplink_scraper.rate_limiter.is_ready()
-        ready &= self.nmap_scraper is None or self.nmap_scraper.rate_limiter.is_ready()
+        ready = self.tplink_scraper is not None and self.tplink_scraper.is_ready()
+        ready |= self.nmap_scraper is not None and self.nmap_scraper.is_ready()
 
     def get_discovered_devices(self) -> set[NetworkInterfaceInfo]:
         devices: set[NetworkInterfaceInfo] = set()

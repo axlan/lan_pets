@@ -128,6 +128,9 @@ class NMAPScraper():
 
             self.nmap_interface.result = None
 
+    def is_ready(self):
+        return self.rate_limiter.is_ready() or self.nmap_interface.result is not None
+
     def update(self):
         self._check_for_scan_complete()
 

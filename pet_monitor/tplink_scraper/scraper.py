@@ -157,6 +157,9 @@ class TPLinkScraper():
             results[mac] = TrafficStats(**metrics)
         return results
 
+    def is_ready(self):
+        return self.rate_limiter.is_ready()
+
     def update(self) -> bool:
         if not self.rate_limiter.get_ready():
             return True
