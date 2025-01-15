@@ -2,6 +2,7 @@ import io
 import logging
 import time
 import urllib.parse
+from sqlite3 import IntegrityError
 from collections import defaultdict
 from typing import NamedTuple, Optional
 
@@ -117,7 +118,11 @@ class NMAPScraper():
 
                     # INSERT
                     if matches == 0:
-                        cur.execute('INSERT INTO nmap_results(ip, mac, host_name) VALUES (?, ?, ?);', result)
+                        # Apperently this can sometimes fail with duplicate MAC addresses in a single scan?
+                        try:
+                            cur.execute('INSERT INTO nmap_results(ip, mac, host_name) VALUES (?, ?, ?);', result)
+                        except IntegrityError as e:
+                            _logger.error(e)
                     # UPDATE
                     else:
                         cur.execute(
