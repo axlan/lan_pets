@@ -19,6 +19,7 @@ _logger = logging.getLogger(__name__)
 SCHEMA_SQL = '''\
 CREATE TABLE nmap_results (
     row_id INTEGER NOT NULL,
+    timestamp INTEGER NOT NULL,     -- Unix time of observation
     ip VARCHAR(15) NOT NULL,       -- IP address (format: IPv4).
     mac VARCHAR(17),               -- MAC address (format: XX-XX-XX-XX-XX-XX). NULL if not available.
     host_name VARCHAR(255),        -- Name of the client. NULL if not available.
@@ -31,6 +32,7 @@ CREATE TABLE nmap_results (
 
 
 class NMAPResult(NamedTuple):
+    timestamp: int
     ip: str
     mac: Optional[str] = None
     host_name: Optional[str] = None
@@ -45,7 +47,7 @@ class NMAPScraper():
 
     def get_all_results(self) -> set[NMAPResult]:
         cur = self.conn.cursor()
-        cur.execute("SELECT ip, mac, host_name FROM nmap_results;""")
+        cur.execute("SELECT timestamp, ip, mac, host_name FROM nmap_results;""")
         return {NMAPResult(*r) for r in cur.fetchall()}
 
     def _check_for_scan_complete(self):
@@ -77,6 +79,7 @@ class NMAPScraper():
             if 'scan' in self.nmap_interface.result:
                 cur_results = self.get_all_results()
                 scan: PortScannerHostDict = self.nmap_interface.result['scan']  # type: ignore
+                timestamp = int(time.time())
                 for ip, result in scan.items():
                     mac = None
                     host_name = None
@@ -93,11 +96,7 @@ class NMAPScraper():
                             if len(name) > 0:
                                 host_name = name
 
-                    result = NMAPResult(ip, mac, host_name)
-
-                    # No change
-                    if result in cur_results:
-                        continue
+                    result = NMAPResult(timestamp, ip, mac, host_name)
 
                     matches = 0
                     for cur_result in cur_results:
@@ -113,21 +112,21 @@ class NMAPScraper():
                     # Mutliple partial matches (DHCP or DNS reasigned). Delete all but one entry.
                     if matches > 1:
                         cur.execute('DELETE FROM nmap_results WHERE ip=? OR mac=? OR host_name=? LIMIT ?;',
-                                    result + (matches - 1,))
+                                    result[1:] + (matches - 1,))
                         matches = 1
 
                     # INSERT
                     if matches == 0:
                         # Apperently this can sometimes fail with duplicate MAC addresses in a single scan?
                         try:
-                            cur.execute('INSERT INTO nmap_results(ip, mac, host_name) VALUES (?, ?, ?);', result)
+                            cur.execute('INSERT INTO nmap_results(timestamp, ip, mac, host_name) VALUES (?, ?, ?, ?);', result)
                         except IntegrityError as e:
-                            _logger.error(e)
+                            _logger.error(e, result)
                     # UPDATE
                     else:
                         cur.execute(
-                            'UPDATE nmap_results SET ip=?, mac=?, host_name=? WHERE ip=? OR mac=? OR host_name=? LIMIT 1;',
-                            result + result)
+                            'UPDATE nmap_results SET timestamp=?, ip=?, mac=?, host_name=? WHERE ip=? OR mac=? OR host_name=? LIMIT 1;',
+                            result + result[1:])
 
                     self.conn.commit()
 

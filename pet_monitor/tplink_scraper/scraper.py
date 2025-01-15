@@ -46,6 +46,22 @@ class TPLinkScraper():
         self.rate_limiter = RateLimiter(settings.update_period_sec)
         self.conn = get_db_connection(DATA_DIR / 'tp_clients.sqlite3', SCHEMA_SQL)
 
+    def load_last_timestamp(self) -> dict[str, int]:
+        cur = self.conn.cursor()
+        cur.execute("""
+            SELECT i.mac, t.timestamp
+            FROM client_traffic t
+            JOIN client_info i
+            ON t.client_id = i.row_id
+            WHERE t.rowid =(
+                SELECT rowid
+                FROM client_traffic t2
+                WHERE t.client_id = t2.client_id
+                ORDER BY rowid DESC
+                LIMIT 1
+            );""")
+        return {r[0]: r[1] for r in cur.fetchall()}
+
     def load_ips(self, mac_addresses: list[str]) -> set[tuple[str, str]]:
         cur = self.conn.cursor()
         place_holders = ', '.join(['?'] * len(mac_addresses))

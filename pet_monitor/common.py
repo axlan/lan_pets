@@ -1,5 +1,5 @@
 
-from dataclasses import dataclass
+from dataclasses import dataclass, asdict, replace
 import logging
 import os
 import sqlite3
@@ -33,6 +33,8 @@ class NetworkInterfaceInfo:
     '''
     Information gathered from network.
     '''
+    # Unix time of last update.
+    timestamp: int = 0
     # MAC address of interface.
     mac: Optional[str] = None
     # IPv4 address of interface.
@@ -52,6 +54,35 @@ class NetworkInterfaceInfo:
     dns_hostname: Optional[str] = None
     # Name over netbios
     netbios_name: Optional[str] = None
+
+    @staticmethod
+    def merge(vals1: Iterable['NetworkInterfaceInfo'],
+              vals2: Iterable['NetworkInterfaceInfo']) -> set['NetworkInterfaceInfo']:
+        results = set()
+        potential_matches = set(vals2)
+        def _match(a: Optional[str], b: Optional[str]) -> bool:
+            return a is not None and a == b
+
+        for v1 in vals1:
+            # Check for duplicates.
+            is_duplicate = False
+            for v2 in potential_matches:
+                if _match(v1.ip, v2.ip) or _match(v1.mac, v2.mac) or _match(v1.dns_hostname, v2.dns_hostname):
+                    newer_record, older_record_dict = (
+                        v1, asdict(v2)) if v1.timestamp > v2.timestamp else (
+                        v2, asdict(v1))
+                    missing = {}
+                    for k, v in asdict(newer_record).items():
+                        if v is None:
+                            missing[k] = older_record_dict[k]
+                    results.add(replace(newer_record, **missing))
+                    is_duplicate = True
+                    potential_matches.remove(v2)
+                    break
+
+            if not is_duplicate:
+                results.add(v1)
+        return results.union(potential_matches)
 
 
 def get_empty_traffic(names: Iterable[str]) -> dict[str, TrafficStats]:

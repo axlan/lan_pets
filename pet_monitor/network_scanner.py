@@ -1,5 +1,3 @@
-
-from dataclasses import replace
 from typing import Iterable
 
 from pet_monitor.common import NetworkInterfaceInfo
@@ -35,37 +33,29 @@ class NetworkScanner:
         devices: set[NetworkInterfaceInfo] = self.settings.hard_coded_interface_info
         if self.tplink_scraper:
             info = self.tplink_scraper.load_info()
-            for client in info.values():
-                devices.add(
-                    NetworkInterfaceInfo(
-                        mac=client.mac,
-                        ip=client.ip,
-                        dhcp_name=client.client_name,
-                        router_description=client.description
-                    )
+            timestamps = self.tplink_scraper.load_last_timestamp()
+            devices = NetworkInterfaceInfo.merge(devices, {
+                NetworkInterfaceInfo(
+                    timestamp=timestamps.get(client.mac, 0),
+                    mac=client.mac,
+                    ip=client.ip,
+                    dhcp_name=client.client_name,
+                    router_description=client.description
                 )
+                for client in info.values()
+            })
 
         if self.nmap_scraper:
             results = self.nmap_scraper.get_all_results()
-            for result in results:
-                # Check for duplicates.
-                is_duplicate = False
-                for device in devices:
-                    if result.ip == device.ip or result.mac == device.mac:
-                        if result.host_name is not None:
-                            devices.remove(device)
-                            devices.add(replace(device, dns_hostname = result.host_name))
-                        is_duplicate = True
-                        break
-
-                if not is_duplicate:
-                    devices.add(
-                        NetworkInterfaceInfo(
-                            mac=result.mac,
-                            ip=result.ip,
-                            dns_hostname=result.host_name,
-                        )
-                    )
+            devices = NetworkInterfaceInfo.merge(devices, {
+                NetworkInterfaceInfo(
+                    timestamp=result.timestamp,
+                    mac=result.mac,
+                    ip=result.ip,
+                    dns_hostname=result.host_name,
+                )
+                for result in results
+            })
 
         return devices
 
@@ -79,7 +69,7 @@ class NetworkScanner:
                 PetData.PrimaryIdentifier.MAC: 'mac',
                 PetData.PrimaryIdentifier.HOST: 'dns_hostname',
             }[PetData.PrimaryIdentifier[pet.identifier_type]]
-            matches[pet.name] = NetworkInterfaceInfo(**{field_name: pet.identifier_value})
+            matches[pet.name] = NetworkInterfaceInfo(**{field_name: pet.identifier_value})  # type: ignore
             for device in devices:
                 if getattr(device, field_name) == pet.identifier_value:
                     matches[pet.name] = device
