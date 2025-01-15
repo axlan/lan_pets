@@ -75,6 +75,7 @@ When it comes to discovering the presence of devices on the network, there are a
 
 # TODO
 Add a "last seen" timestamp to discovery to potentially age out ephemeral devices
+Add button to do full NMAP scan on device and save result for viewing.
 On management page, show last seen info
 When pihole 6 is released, add integration into pihole API
 Have option to use NMAP for ping?

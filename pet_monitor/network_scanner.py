@@ -32,7 +32,7 @@ class NetworkScanner:
         ready |= self.nmap_scraper is not None and self.nmap_scraper.is_ready()
 
     def get_discovered_devices(self) -> set[NetworkInterfaceInfo]:
-        devices: set[NetworkInterfaceInfo] = set()
+        devices: set[NetworkInterfaceInfo] = self.settings.hard_coded_interface_info
         if self.tplink_scraper:
             info = self.tplink_scraper.load_info()
             for client in info.values():

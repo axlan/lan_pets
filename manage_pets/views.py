@@ -35,13 +35,6 @@ _MAX_LOG_HISTORY_BYTES = 1024 * 32
 greetings = [line.strip() for line in open('data/greetings.txt').readlines()]
 
 
-def _load_client_info(tplink_scraper):
-    tp_link_info = _MONITOR_SETTINGS.hard_coded_client_info()
-    if tplink_scraper:
-        tp_link_info.update(tplink_scraper.load_info())
-    return tp_link_info
-
-
 @csrf_exempt
 def manage_pets(request):
     if request.method == "POST":
