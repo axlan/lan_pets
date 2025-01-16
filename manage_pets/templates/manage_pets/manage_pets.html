@@ -14,12 +14,12 @@
   <script>
     {% autoescape off %}
     var data1 = [
-      ['Name', 'Status', 'Greeting', 'Pic'],
+      ['Name', "Last Seen", 'Status', 'Greeting', 'Pic'],
       {{friend_rows}}
     ]
     {% if router_results_exist %}
     var data2 = [
-      ["Name", "description", "IP", "MAC"],
+      ["Name", "Last Seen", "Description", "IP", "MAC"],
       {{router_rows}}
     ]
     {% endif %}
@@ -42,7 +42,7 @@
           if (i == 0) {
             contents ="<a href=\"/view_pet/"+data[i]+"\">"+data[i]+"</a>"
           }
-          else if (i == 3){
+          else if (i == 4){
             contents ='<img src="/static/' + data[i] + '" width="10%" height="10%" style="display: inline-block;">'
           }
         }
@@ -123,7 +123,8 @@
       for (i = 0; i < rows.length; i++) {
         var row = rows[i].valueOf()
         var createClickHandler = function(row) {
-          let mac = row.children[3].innerText
+          let ip = row.children[3].innerText
+          let mac = row.children[4].innerText
           let name = ""
           if (row.children[0].innerText != "?") {
             name = row.children[0].innerText
@@ -134,8 +135,21 @@
             let selector = document.getElementById('id-type')
             let pet_id = document.getElementById('pet-id')
             let pet_name = document.getElementById('pet-name')
-            selector.value = "MAC"
-            pet_id.value = mac
+            if (mac != "?") {
+              id_type_choices.setChoiceByValue('MAC')
+              selector.value = "MAC"
+              pet_id.value = mac
+            }
+            else if (ip != "?") {
+              id_type_choices.setChoiceByValue('IP')
+              pet_id.value = ip
+            }
+            else {
+              id_type_choices.setChoiceByValue('MAC')
+              pet_id.value = ""
+            }
+            setID()
+            
             pet_name.value = name
             showForm()
           };

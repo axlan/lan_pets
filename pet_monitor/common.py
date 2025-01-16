@@ -18,6 +18,8 @@ class ClientInfo(NamedTuple):
     ip: Optional[str] = None
     client_name: Optional[str] = None
     description: Optional[str] = None
+    timestamp: int = 0
+
 
 
 class TrafficStats(NamedTuple):
@@ -27,6 +29,33 @@ class TrafficStats(NamedTuple):
     rx_bytes_bps: float
     tx_bytes_bps: float
 
+def get_timestamp_age_str(timestamp: int, now_interval = 0) -> str:
+    age = int(time.time()) - timestamp
+    minute = 60
+    hour = minute * 60
+    day = hour * 24
+    week = day * 7
+    month = day * 30
+    year = day * 365
+
+    if age < now_interval:
+        return "now"
+    elif age < minute:
+        return f'{int(age)} sec'
+    elif age < hour:
+        return f'{int(age/minute)} min'
+    elif age < day:
+        return f'{int(age/hour)} hour'
+    elif age < week:
+        return f'{int(age/day)} day'
+    elif age < month:
+        return f'{int(age/week)} week'
+    elif age < year:
+        return f'{int(age/month)} month'
+    elif timestamp != 0:
+        return 'year+'
+    else:
+        return 'never'
 
 @dataclass(frozen=True)
 class NetworkInterfaceInfo:
@@ -54,6 +83,9 @@ class NetworkInterfaceInfo:
     dns_hostname: Optional[str] = None
     # Name over netbios
     netbios_name: Optional[str] = None
+
+    def get_timestamp_age_str(self, now_interval = 0) -> str:
+        return get_timestamp_age_str(self.timestamp, now_interval)
 
     @staticmethod
     def merge(vals1: Iterable['NetworkInterfaceInfo'],

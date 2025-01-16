@@ -3,7 +3,7 @@ import logging
 import time
 import urllib.parse
 from collections import defaultdict
-from typing import NamedTuple, Optional
+from typing import Optional
 
 import pandas as pd
 import plotly.graph_objects as go
@@ -25,6 +25,7 @@ CREATE TABLE client_info (
     ip VARCHAR(15),                         -- IP address (format: IPv4). NULL if not available.
     client_name VARCHAR(255),               -- Name of the client
     description VARCHAR(255),               -- Additional information about the client
+    timestamp INTEGER DEFAULT (strftime('%s', 'now')), -- Unix time last updated
     UNIQUE (mac),                            -- Ensure MAC addresses are unique
     PRIMARY KEY(row_id)
 );
@@ -39,28 +40,11 @@ CREATE TABLE client_traffic (
 );
 '''
 
-
 class TPLinkScraper():
     def __init__(self, settings: TPLinkSettings) -> None:
         self.settings = settings
         self.rate_limiter = RateLimiter(settings.update_period_sec)
         self.conn = get_db_connection(DATA_DIR / 'tp_clients.sqlite3', SCHEMA_SQL)
-
-    def load_last_timestamp(self) -> dict[str, int]:
-        cur = self.conn.cursor()
-        cur.execute("""
-            SELECT i.mac, t.timestamp
-            FROM client_traffic t
-            JOIN client_info i
-            ON t.client_id = i.row_id
-            WHERE t.rowid =(
-                SELECT rowid
-                FROM client_traffic t2
-                WHERE t.client_id = t2.client_id
-                ORDER BY rowid DESC
-                LIMIT 1
-            );""")
-        return {r[0]: r[1] for r in cur.fetchall()}
 
     def load_ips(self, mac_addresses: list[str]) -> set[tuple[str, str]]:
         cur = self.conn.cursor()
@@ -213,17 +197,18 @@ class TPLinkScraper():
         num_total = 0
         num_traffic = 0
         num_connected = 0
+        timestamp = int(time.time())
         for record in cur.fetchall():
             row_id = record[0]
             db_client = ClientInfo(*record[1:])
             if db_client.mac in devices:
                 device = devices.pop(db_client.mac)
-                client = ClientInfo(db_client.mac, **device)
+                client = ClientInfo(db_client.mac, timestamp=timestamp, **device)
                 if client == db_client:
                     continue
                 else:
                     cur.execute(
-                        'UPDATE client_info SET is_reserved=?, ip=?, client_name=?, description=? WHERE row_id=?', client[1:] + (row_id,))
+                        'UPDATE client_info SET is_reserved=?, ip=?, client_name=?, description=?, timestamp=? WHERE row_id=?', client[1:] + (row_id,))
                     num_updated += 1
             elif db_client.ip is not None:
                 cur.execute(
@@ -231,9 +216,9 @@ class TPLinkScraper():
                 num_updated += 1
 
         for mac, device in devices.items():
-            client = ClientInfo(mac, **device)
+            client = ClientInfo(mac, timestamp=timestamp, **device)
             cur.execute(
-                'INSERT INTO client_info(mac, is_reserved, ip, client_name, description) VALUES (?, ?, ?, ?, ?)', client)
+                'INSERT INTO client_info(mac, is_reserved, ip, client_name, description, timestamp) VALUES (?, ?, ?, ?, ?, ?)', client)
             num_added += 1
             _logger.info(f'Found new potential friend: {client.mac} ({client.client_name})')
         self.conn.commit()

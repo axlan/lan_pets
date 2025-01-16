@@ -33,10 +33,10 @@ class NetworkScanner:
         devices: set[NetworkInterfaceInfo] = self.settings.hard_coded_interface_info
         if self.tplink_scraper:
             info = self.tplink_scraper.load_info()
-            timestamps = self.tplink_scraper.load_last_timestamp()
             devices = NetworkInterfaceInfo.merge(devices, {
                 NetworkInterfaceInfo(
-                    timestamp=timestamps.get(client.mac, 0),
+                    # If the address wasn't reserved, assume the device was seen in the last 2 hours.
+                    timestamp=client.timestamp if client.is_reserved else client.timestamp - 60 * 60 * 2,
                     mac=client.mac,
                     ip=client.ip,
                     dhcp_name=client.client_name,

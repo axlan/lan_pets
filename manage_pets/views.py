@@ -14,13 +14,12 @@ from django.views.decorators.csrf import csrf_exempt
 
 from avatar_gen.generate_avatar import get_pet_avatar
 from manage_pets.models import PetData
-from pet_monitor.common import CONSOLE_LOG_FILE
+from pet_monitor.common import CONSOLE_LOG_FILE, get_timestamp_age_str
 from pet_monitor.network_scanner import NetworkScanner
 from pet_monitor.pet_ai import PetAi
 from pet_monitor.ping import Pinger
 from pet_monitor.settings import get_settings
-from pet_monitor.tplink_scraper.scraper import (ClientInfo, TPLinkScraper,
-                                                TrafficStats)
+from pet_monitor.tplink_scraper.scraper import TrafficStats
 
 logger = logging.getLogger(__name__)
 
@@ -49,6 +48,7 @@ def manage_pets(request):
     scanner = NetworkScanner(_MONITOR_SETTINGS)
     discovered_devices = scanner.get_discovered_devices()
     mapped_pets = scanner.map_pets_to_devices(discovered_devices, pets)
+    last_seen_timestamps = Pinger(_MONITOR_SETTINGS.pinger_settings).load_last_seen([p.name for p in pets])
 
     #     friend_rows = '''\
     # ["Nala", "Happy", "^._.^"],
@@ -58,6 +58,7 @@ def manage_pets(request):
     pet_ai = PetAi(_MONITOR_SETTINGS.pet_ai_settings)
     for pet in PetData.objects.iterator():
         device = mapped_pets[pet.name]
+        timestamp = last_seen_timestamps[pet.name]
         # Remove from list so they don't show up twice time.
         if device in discovered_devices:
             discovered_devices.remove(device)
@@ -65,7 +66,7 @@ def manage_pets(request):
         avatar_path = get_pet_avatar(_STATIC_PATH, pet.device_type, pet.name, mac_address)
         mood = pet_ai.get_moods([pet.name])[pet.name].name
         friend_rows.append(
-            f'["{pet.name}", "{mood.title()}", "{greetings[randrange(len(greetings))]}", "{avatar_path.name}"]')
+            f'["{pet.name}", "{get_timestamp_age_str(timestamp, now_interval=60)}", "{mood.title()}", "{greetings[randrange(len(greetings))]}", "{avatar_path.name}"]')
     friend_rows = ',\n'.join(friend_rows)
 
     # Format scraper results into JS table.
@@ -73,7 +74,7 @@ def manage_pets(request):
     rows = []
     for device in discovered_devices:
         client_name = device.dns_hostname if device.dhcp_name is None else device.dhcp_name
-        record = [client_name, device.router_description, device.ip, device.mac]
+        record = [client_name, device.get_timestamp_age_str(now_interval=10*60), device.router_description, device.ip, device.mac]
         values = ['"?"' if r is None else f'"{r}"' for r in record]
         values = ",".join(values)
         rows.append(f'[{values}]')

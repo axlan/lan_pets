@@ -63,6 +63,24 @@ class Pinger:
         self.rate_limiter = RateLimiter(settings.update_period_sec)
         self.conn = get_db_connection(DATA_DIR / 'ping_results.sqlite3', SCHEMA_SQL)
 
+    def load_last_seen(self, names: Iterable[str]) -> dict[str, int]:
+        results = {n: 0 for n in names}
+        cur = self.conn.cursor()
+        cur.execute("""
+            SELECT n.name, r.timestamp
+            FROM ping_results r
+            JOIN ping_names n
+            ON r.name_id = n.row_id
+            WHERE r.rowid =(
+                SELECT rowid
+                FROM ping_results r2
+                WHERE r.name_id = r2.name_id AND r2.is_connected
+                ORDER BY rowid DESC
+                LIMIT 1
+            );""")
+        results.update({r[0]: r[1] for r in cur.fetchall()})
+        return results
+
     def load_current_availability(self, names: Iterable[str]) -> dict[str, bool]:
         results = {n: False for n in names}
         cur = self.conn.cursor()
