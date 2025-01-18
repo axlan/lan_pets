@@ -121,7 +121,7 @@ class NMAPScraper():
                         try:
                             cur.execute('INSERT INTO nmap_results(timestamp, ip, mac, host_name) VALUES (?, ?, ?, ?);', result)
                         except IntegrityError as e:
-                            _logger.error(e, result)
+                            _logger.error(f'{e}: {result}')
                     # UPDATE
                     else:
                         cur.execute(

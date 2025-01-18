@@ -91,3 +91,22 @@ Add different mood algorithms
 Make relationship logic more involved
 Have paginated view of activity in reverse chronological order
 Log Django errors
+
+# NMAP notes
+
+Can also use NMAP directly to get more context for devices on the network.
+
+<https://nmap.org/book/man.html>
+```sh
+# mDNS
+sudo nmap -sU --script dns-service-discovery -p 5353    192.168.1.8
+# Net bios
+sudo nmap -sU --script nbstat.nse -p137 192.168.1.8
+# Quick scan
+sudo nmap -F 192.168.1.123
+# Combined 
+TOP_100_TCP="7,9,13,21-23,25-26,37,53,79-81,88,106,110-111,113,119,135,139,143-144,179,199,389,427,443-445,465,513-515,543-544,548,554,587,631,646,873,990,993,995,1025-1029,1110,1433,1720,1723,1755,1900,2000-2001,2049,2121,2717,3000,3128,3306,3389,3986,4899,5000,5009,5051,5060,5101,5190,5357,5432,5631,5666,5800,5900,6000-6001,6646,7070,8000,8008-8009,8080-8081,8443,8888,9100,9999-10000,32768,49152-49157"
+sudo nmap -sU -sT -p U:137,5353,T:$TOP_100_TCP --script nbstat.nse --script dns-service-discovery 192.168.1.8
+# Full scan
+sudo nmap -A 192.168.1.123
+```
