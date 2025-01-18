@@ -169,10 +169,10 @@ class Pinger:
 
         hosts = set()
         for name, device in pets.items():
-            if device.dns_hostname is not None:
-                hosts.add((name, device.dns_hostname))
-            elif device.ip is not None:
+            if device.ip is not None:
                 hosts.add((name, device.ip))
+            elif device.dns_hostname is not None:
+                hosts.add((name, device.dns_hostname))
 
 
         # Ideally, don't block on this. Leaving the scope waits for all threads to finish.
