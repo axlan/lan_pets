@@ -14,7 +14,7 @@
   <script>
     {% autoescape off %}
     var data1 = [
-      ['Name', "Last Seen", 'Status', 'Greeting', 'Pic'],
+      ['Name', "Last Seen", 'Status', 'Greeting', 'Type', 'Pic'],
       {{friend_rows}}
     ]
     {% if router_results_exist %}
@@ -42,7 +42,7 @@
           if (i == 0) {
             contents ="<a href=\"/view_pet/"+data[i]+"\">"+data[i]+"</a>"
           }
-          else if (i == 4){
+          else if (i == 5){
             contents ='<img src="/static/' + data[i] + '" width="10%" height="10%" style="display: inline-block;">'
           }
         }
@@ -128,8 +128,8 @@
           let name = ""
           if (row.children[0].innerText != "?") {
             name = row.children[0].innerText
-          } else if (row.children[1].innerText != "?") {
-            name = row.children[1].innerText
+          } else if (row.children[2].innerText != "?") {
+            name = row.children[2].innerText
           }
           return function() {
             let selector = document.getElementById('id-type')

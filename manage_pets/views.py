@@ -66,7 +66,7 @@ def manage_pets(request):
         avatar_path = get_pet_avatar(_STATIC_PATH, pet.device_type, pet.name, mac_address)
         mood = pet_ai.get_moods([pet.name])[pet.name].name
         friend_rows.append(
-            f'["{pet.name}", "{get_timestamp_age_str(timestamp, now_interval=60)}", "{mood.title()}", "{greetings[randrange(len(greetings))]}", "{avatar_path.name}"]')
+            f'["{pet.name}", "{get_timestamp_age_str(timestamp, now_interval=60)}", "{mood.title()}", "{greetings[randrange(len(greetings))]}", "{pet.device_type}", "{avatar_path.name}"]')
     friend_rows = ',\n'.join(friend_rows)
 
     # Format scraper results into JS table.
