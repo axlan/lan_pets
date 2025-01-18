@@ -9,12 +9,16 @@ from pet_monitor.common import NetworkInterfaceInfo
 
 _logger = logging.getLogger(__name__)
 
+# week
+MAX_HISTORY_LEN_SEC = 60.0 * 60.0 * 24.0 * 7.0
+
 
 class PingerSettings(NamedTuple):
     '''
     Settings for periodically sending ICMP ping to each pet.
     '''
     update_period_sec = 10.0
+    history_len = MAX_HISTORY_LEN_SEC
 
 
 class MoodAlgorithm(Enum):
@@ -59,6 +63,7 @@ class TPLinkSettings(NamedTuple):
     username: str
     password: str
     update_period_sec = 60.0 * 10
+    history_len = MAX_HISTORY_LEN_SEC
 
 
 class NMAPSettings(NamedTuple):
@@ -84,7 +89,7 @@ class Settings(NamedTuple):
     # Timezone to use for plots.
     plot_timezone = 'America/Los_Angeles'
     # Time window to draw in plots.
-    plot_data_window_sec = 60.0 * 60.0 * 24.0 * 7.0
+    plot_data_window_sec = MAX_HISTORY_LEN_SEC
 
     pinger_settings = PingerSettings()
     pet_ai_settings = PetAISettings()

@@ -6,7 +6,7 @@ import pandas as pd
 import plotly_express as px
 from icmplib import ping
 
-from pet_monitor.common import (DATA_DIR, NetworkInterfaceInfo, delete_missing_names,
+from pet_monitor.common import (DATA_DIR, NetworkInterfaceInfo, delete_missing_names, delete_old_entries,
                                 get_db_connection)
 from pet_monitor.settings import PingerSettings, RateLimiter, get_settings
 
@@ -60,6 +60,7 @@ def _ping_in_parallel(hosts: Iterable[tuple[str, str]]) -> Generator[tuple[tuple
 
 class Pinger:
     def __init__(self, settings: PingerSettings) -> None:
+        self.settings = settings
         self.rate_limiter = RateLimiter(settings.update_period_sec)
         self.conn = get_db_connection(DATA_DIR / 'ping_results.sqlite3', SCHEMA_SQL)
 
@@ -67,36 +68,31 @@ class Pinger:
         results = {n: 0 for n in names}
         cur = self.conn.cursor()
         cur.execute("""
-            SELECT n.name, r.timestamp
-            FROM ping_results r
-            JOIN ping_names n
-            ON r.name_id = n.row_id
-            WHERE r.rowid =(
-                SELECT rowid
-                FROM ping_results r2
-                WHERE r.name_id = r2.name_id AND r2.is_connected
-                ORDER BY rowid DESC
-                LIMIT 1
-            );""")
-        results.update({r[0]: r[1] for r in cur.fetchall()})
+            SELECT 
+                ping_names.name,
+                MAX(ping_results.timestamp) 
+            FROM 
+                ping_results
+            INNER JOIN ping_names ON ping_names.row_id = ping_results.name_id
+            WHERE ping_results.is_connected
+            GROUP BY 
+                ping_results.name_id;""")
+        results.update({r[0]: r[1] for r in cur.fetchall() if r[0] in names})
         return results
 
     def load_current_availability(self, names: Iterable[str]) -> dict[str, bool]:
         results = {n: False for n in names}
         cur = self.conn.cursor()
         cur.execute("""
-            SELECT n.name, r.is_connected
-            FROM ping_results r
-            JOIN ping_names n
-            ON r.name_id = n.row_id
-            WHERE r.rowid =(
-                SELECT rowid
-                FROM ping_results r2
-                WHERE r.name_id = r2.name_id
-                ORDER BY rowid DESC
-                LIMIT 1
-            );""")
-        results.update({r[0]: bool(r[1]) for r in cur.fetchall()})
+            SELECT 
+                ping_names.name,
+                ping_results.is_connected 
+            FROM 
+                ping_results
+            INNER JOIN ping_names ON ping_names.row_id = ping_results.name_id
+            ORDER BY ping_results.rowid DESC
+            LIMIT (SELECT COUNT(*) FROM ping_names);""")
+        results.update({r[0]: bool(r[1]) for r in cur.fetchall() if r[0] in names})
         return results
 
     def load_availability(self, names: Iterable[str], since_timestamp=0.0) -> pd.DataFrame:
@@ -167,6 +163,9 @@ class Pinger:
 
         # Clear deleted pets
         delete_missing_names(self.conn, 'ping_names', names)
+        
+        # Clear old data.
+        delete_old_entries(self.conn, 'ping_results', int(self.settings.history_len))
 
         hosts = set()
         for name, device in pets.items():

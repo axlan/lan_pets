@@ -144,6 +144,12 @@ def delete_missing_names(conn: sqlite3.Connection, table: str, names: Collection
     conn.commit()
 
 
+def delete_old_entries(conn: sqlite3.Connection, table: str, max_age_sec: int) -> None:
+    cutoff_time = int(time.time() - max_age_sec)
+    conn.execute(f"DELETE FROM {table} WHERE timestamp < ?;", (cutoff_time,))
+    conn.commit()
+
+
 class LoggingTimeFilter(logging.Filter):
     def filter(self, record):
         record.unix_time = int(time.time())

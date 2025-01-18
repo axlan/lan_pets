@@ -9,7 +9,7 @@ import pandas as pd
 import plotly.graph_objects as go
 from plotly.subplots import make_subplots
 
-from pet_monitor.common import (DATA_DIR, ClientInfo, TrafficStats,
+from pet_monitor.common import (DATA_DIR, ClientInfo, TrafficStats, delete_old_entries,
                                 get_db_connection)
 from pet_monitor.settings import RateLimiter, TPLinkSettings, get_settings
 from pet_monitor.tplink_scraper.tplink_interface import TPLinkInterface
@@ -163,6 +163,8 @@ class TPLinkScraper():
     def update(self) -> bool:
         if not self.rate_limiter.get_ready():
             return True
+        
+        delete_old_entries(self.conn, 'client_traffic', int(self.settings.history_len))
 
         try:
             tplink = TPLinkInterface(
