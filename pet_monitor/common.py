@@ -87,19 +87,21 @@ class NetworkInterfaceInfo:
     def get_timestamp_age_str(self, now_interval = 0) -> str:
         return get_timestamp_age_str(self.timestamp, now_interval)
 
+    def is_duplicate(self, other: 'NetworkInterfaceInfo') -> bool:
+        def _match(a: Optional[str], b: Optional[str]) -> bool:
+                    return a is not None and a == b
+        return _match(self.ip, other.ip) or _match(self.mac, other.mac) or _match(self.dns_hostname, other.dns_hostname)
+
     @staticmethod
     def merge(vals1: Iterable['NetworkInterfaceInfo'],
               vals2: Iterable['NetworkInterfaceInfo']) -> set['NetworkInterfaceInfo']:
         results = set()
         potential_matches = set(vals2)
-        def _match(a: Optional[str], b: Optional[str]) -> bool:
-            return a is not None and a == b
-
         for v1 in vals1:
             # Check for duplicates.
             is_duplicate = False
             for v2 in potential_matches:
-                if _match(v1.ip, v2.ip) or _match(v1.mac, v2.mac) or _match(v1.dns_hostname, v2.dns_hostname):
+                if v1.is_duplicate(v2):
                     newer_record, older_record_dict = (
                         v1, asdict(v2)) if v1.timestamp > v2.timestamp else (
                         v2, asdict(v1))
@@ -115,6 +117,21 @@ class NetworkInterfaceInfo:
             if not is_duplicate:
                 results.add(v1)
         return results.union(potential_matches)
+    
+    @staticmethod
+    def filter_duplicates(vals: Iterable['NetworkInterfaceInfo']) -> set['NetworkInterfaceInfo']:
+        results = set()
+        for v1 in vals:
+            # Check for duplicates.
+            is_duplicate = False
+            for v2 in results:
+                if v1.is_duplicate(v2):
+                    is_duplicate = True
+                    break
+
+            if not is_duplicate:
+                results.add(v1)
+        return results
 
 
 def get_empty_traffic(names: Iterable[str]) -> dict[str, TrafficStats]:

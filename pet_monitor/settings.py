@@ -17,7 +17,7 @@ class PingerSettings(NamedTuple):
     '''
     Settings for periodically sending ICMP ping to each pet.
     '''
-    update_period_sec = 10.0
+    update_period_sec = 60.0
     history_len = MAX_HISTORY_LEN_SEC
 
 

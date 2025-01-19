@@ -4,11 +4,11 @@ import time
 import urllib.parse
 from sqlite3 import IntegrityError
 from collections import defaultdict
-from typing import NamedTuple, Optional
+from typing import Iterable, NamedTuple, Optional
 
 from nmap import PortScannerHostDict
 
-from pet_monitor.common import (DATA_DIR, ClientInfo, TrafficStats,
+from pet_monitor.common import (DATA_DIR, NetworkInterfaceInfo,
                                 get_db_connection)
 from pet_monitor.settings import RateLimiter, NMAPSettings, get_settings
 from pet_monitor.nmap.nmap_interface import NMAPRunner
@@ -36,6 +36,26 @@ class NMAPResult(NamedTuple):
     ip: str
     mac: Optional[str] = None
     host_name: Optional[str] = None
+
+    def is_duplicate(self, other: 'NMAPResult') -> bool:
+        def _match(a: Optional[str], b: Optional[str]) -> bool:
+                    return a is not None and a == b
+        return _match(self.ip, other.ip) or _match(self.mac, other.mac) or _match(self.host_name, other.host_name)
+
+    @staticmethod
+    def filter_duplicates(vals: Iterable['NMAPResult']) -> set['NMAPResult']:
+        results = set()
+        for v1 in vals:
+            # Check for duplicates.
+            is_duplicate = False
+            for v2 in results:
+                if v1.is_duplicate(v2):
+                    is_duplicate = True
+                    break
+
+            if not is_duplicate:
+                results.add(v1)
+        return results
 
 
 class NMAPScraper():
@@ -77,7 +97,8 @@ class NMAPScraper():
                 _logger.debug(self.nmap_interface.result['nmap'])
 
             if 'scan' in self.nmap_interface.result:
-                cur_results = self.get_all_results()
+                # Apperently, NMAP can sometimes return results with duplicate MAC addresses in a single scan?
+                cur_results = NMAPResult.filter_duplicates(self.get_all_results())
                 scan: PortScannerHostDict = self.nmap_interface.result['scan']  # type: ignore
                 timestamp = int(time.time())
                 for ip, result in scan.items():
@@ -100,11 +121,7 @@ class NMAPScraper():
 
                     matches = 0
                     for cur_result in cur_results:
-                        if cur_result.ip == result.ip:
-                            matches += 1
-                        elif result.mac is not None and cur_result.mac == result.mac:
-                            matches += 1
-                        elif result.host_name is not None and cur_result.host_name == result.host_name:
+                        if cur_result.is_duplicate(result):
                             matches += 1
 
                     cur = self.conn.cursor()
@@ -117,11 +134,7 @@ class NMAPScraper():
 
                     # INSERT
                     if matches == 0:
-                        # Apperently this can sometimes fail with duplicate MAC addresses in a single scan?
-                        try:
-                            cur.execute('INSERT INTO nmap_results(timestamp, ip, mac, host_name) VALUES (?, ?, ?, ?);', result)
-                        except IntegrityError as e:
-                            _logger.error(f'{e}: {result}')
+                        cur.execute('INSERT INTO nmap_results(timestamp, ip, mac, host_name) VALUES (?, ?, ?, ?);', result)
                     # UPDATE
                     else:
                         cur.execute(
