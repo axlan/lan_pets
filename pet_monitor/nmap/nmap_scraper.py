@@ -97,10 +97,10 @@ class NMAPScraper():
                 _logger.debug(self.nmap_interface.result['nmap'])
 
             if 'scan' in self.nmap_interface.result:
-                # Apperently, NMAP can sometimes return results with duplicate MAC addresses in a single scan?
-                cur_results = NMAPResult.filter_duplicates(self.get_all_results())
+                cur_results = self.get_all_results()
                 scan: PortScannerHostDict = self.nmap_interface.result['scan']  # type: ignore
                 timestamp = int(time.time())
+                new_results: set[NMAPResult] = set()
                 for ip, result in scan.items():
                     mac = None
                     host_name = None
@@ -119,6 +119,12 @@ class NMAPScraper():
 
                     result = NMAPResult(timestamp, ip, mac, host_name)
 
+                    # Apperently, NMAP can sometimes return results with duplicate MAC addresses in a single scan?
+                    for v in new_results:
+                        if v.is_duplicate(result):
+                            continue
+                    new_results.add(result)
+
                     matches = 0
                     for cur_result in cur_results:
                         if cur_result.is_duplicate(result):
@@ -132,14 +138,20 @@ class NMAPScraper():
                                     result[1:] + (matches - 1,))
                         matches = 1
 
-                    # INSERT
-                    if matches == 0:
-                        cur.execute('INSERT INTO nmap_results(timestamp, ip, mac, host_name) VALUES (?, ?, ?, ?);', result)
-                    # UPDATE
-                    else:
-                        cur.execute(
-                            'UPDATE nmap_results SET timestamp=?, ip=?, mac=?, host_name=? WHERE ip=? OR mac=? OR host_name=? LIMIT 1;',
-                            result + result[1:])
+                    try:
+                        # INSERT
+                        if matches == 0:
+                            cur.execute('INSERT INTO nmap_results(timestamp, ip, mac, host_name) VALUES (?, ?, ?, ?);', result)
+                        # UPDATE
+                        else:
+                            cur.execute(
+                                'UPDATE nmap_results SET timestamp=?, ip=?, mac=?, host_name=? WHERE ip=? OR mac=? OR host_name=? LIMIT 1;',
+                                result + result[1:])
+                    except:
+                        print(cur_results)
+                        print(new_results)
+                        print(result)
+                        raise
 
                     self.conn.commit()
 
