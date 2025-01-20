@@ -119,11 +119,16 @@ class NMAPScraper():
 
                     result = NMAPResult(timestamp, ip, mac, host_name)
 
-                    # Apperently, NMAP can sometimes return results with duplicate MAC addresses in a single scan?
+                    # Apparently, NMAP can sometimes return results with duplicate MAC addresses in a single scan?
+                    is_duplicate = False
                     for v in new_results:
                         if v.is_duplicate(result):
-                            continue
-                    new_results.add(result)
+                            is_duplicate = True
+                            break
+                    if is_duplicate:
+                        continue
+                    else:
+                        new_results.add(result)
 
                     matches = 0
                     for cur_result in cur_results:
