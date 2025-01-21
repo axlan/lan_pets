@@ -9,6 +9,7 @@ from random import randrange
 from typing import Optional
 from zoneinfo import ZoneInfo
 
+from django.http import HttpResponseNotFound
 from django.shortcuts import redirect, render
 from django.views.decorators.csrf import csrf_exempt
 
@@ -107,7 +108,7 @@ def view_relationships(request):
 def view_pet(request, name):
     matching_objects = PetData.objects.filter(name__exact=name)
     if len(matching_objects) == 0:
-        return "Not Found"
+        return HttpResponseNotFound(f'<h1>Pet "{name}" Not Found</h1>')
     else:
         pinger = Pinger(_MONITOR_SETTINGS.pinger_settings)
         pet_ai = PetAi(_MONITOR_SETTINGS.pet_ai_settings)
@@ -165,7 +166,7 @@ def delete_pet(request, name):
 
 def view_history(request, name=''):
     if not CONSOLE_LOG_FILE.exists():
-        return "Not Found"
+        return HttpResponseNotFound(f"<h1>History Log Not Found</h1>")
     file_size = CONSOLE_LOG_FILE.stat().st_size
     history_fd = open(CONSOLE_LOG_FILE, 'r')
     if file_size > _MAX_LOG_HISTORY_BYTES:
@@ -193,7 +194,7 @@ def view_history(request, name=''):
 def edit_pet(request, name):
     matching_objects = PetData.objects.filter(name__exact=name)
     if len(matching_objects) == 0:
-        return "Not Found"
+        return HttpResponseNotFound(f'<h1>Pet "{name}" Not Found</h1>')
     else:
         pet_data = matching_objects[0]
         if request.method == "POST":
