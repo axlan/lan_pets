@@ -9,7 +9,7 @@ from random import randrange
 from typing import Optional
 from zoneinfo import ZoneInfo
 
-from django.http import HttpResponseNotFound
+from django.http import HttpResponseNotFound, HttpResponseServerError
 from django.shortcuts import redirect, render
 from django.views.decorators.csrf import csrf_exempt
 
@@ -102,6 +102,49 @@ def view_relationships(request):
     relationships = {(r[0], r[1], r[2].name.lower(), ) for r in relationships}
     return render(request, "manage_pets/view_relationships.html", {'pet_data': pet_data,
                                                                    'relationships': relationships, })
+
+
+def view_data_usage(request):
+    pets = list(PetData.objects.iterator())
+    scanner = NetworkScanner(_MONITOR_SETTINGS)
+    tplink_scraper = scanner.tplink_scraper
+    history_start_time = time.time() - _MONITOR_SETTINGS.plot_data_window_sec
+    
+    if tplink_scraper is None:
+        return HttpResponseServerError('<h1>Bandwidth Usage Not Available. Add Router Info to Settings.</h1>')
+
+    mapped_pets = scanner.map_pets_to_devices(scanner.get_discovered_devices(), pets)
+    mac_addresses = [m.mac for m in mapped_pets.values() if m.mac is not None]
+    traffic_stats = tplink_scraper.load_mean_bps(mac_addresses, since_timestamp=history_start_time)
+    device_types = {p.name:p.device_type for p in pets}
+
+    pet_data = []
+
+    max_bytes = 1
+    for name, info in mapped_pets.items():
+        if info.mac is not None and info.mac in traffic_stats:
+            max_bytes = max(max_bytes, traffic_stats[info.mac].rx_bytes, traffic_stats[info.mac].tx_bytes)
+
+    for name, info in mapped_pets.items():
+        available =  info.mac in traffic_stats
+        rx_bytes = 0
+        tx_bytes = 0
+        if info.mac is not None and available:
+            rx_bytes = int(traffic_stats[info.mac].rx_bytes)
+            tx_bytes = int(traffic_stats[info.mac].tx_bytes)
+        larger_byte_val = max(rx_bytes, tx_bytes)
+        max_bytes = max(max_bytes, larger_byte_val)
+        pet_data.append((
+            name,
+            available,
+            rx_bytes,
+            tx_bytes,
+            larger_byte_val / max_bytes * 100.0,
+            get_pet_avatar(_STATIC_PATH, device_types[name], name, info.mac).name  
+        ))
+    pet_data = sorted(pet_data, key=lambda x: x[4], reverse=True)
+
+    return render(request, "manage_pets/view_data_usage.html", {'pet_data': pet_data})
 
 
 @csrf_exempt

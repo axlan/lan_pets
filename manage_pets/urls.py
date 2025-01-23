@@ -12,6 +12,7 @@ urlpatterns = [
     path("view_relationships", views.view_relationships, name="view_relationships"),
     path("view_history/<name>", views.view_history, name="view_history"),
     path("view_history", views.view_history, name="view_history"),
+    path("view_data_usage", views.view_data_usage, name="view_data_usage"),
 ]
 
 urlpatterns += staticfiles_urlpatterns()

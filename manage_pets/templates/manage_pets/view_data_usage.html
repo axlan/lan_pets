@@ -1,0 +1,58 @@
+{% load static %}
+<!doctype html>
+<html lang="en-US">
+
+<head>
+  <meta charset="utf-8" />
+  <title>Pet Activity</title>
+  <link rel="stylesheet" type="text/css" href="{% static 'nyan.css' %}">
+  <link rel="shortcut icon" type="image/png" href="{% static 'favicon.ico' %}" />
+  <style>
+    table {
+      font-family: arial, sans-serif;
+      border-collapse: collapse;
+      width: 100%;
+    }
+
+    td,
+    th {
+      border: 1px solid #dddddd;
+      text-align: left;
+      padding: 8px;
+    }
+
+    tr:nth-child(even) {
+      background-color: #dddddd;
+    }
+  </style>
+</head>
+
+<body>
+  {% include "./header.html" with nav="view_data_usage" %}
+
+  <table>
+    <th>Name</th>
+    <th>RX Bytes</th>
+    <th>TX Bytes</th>
+    <th>Pic</th>
+    {% for name, available, rx_bytes, tx_bytes, percentage, icon in pet_data %}
+    <tr>
+      <td><a href="/view_pet/{{name}}">{{name}}</a></td>
+      <td>{{rx_bytes}}</td>
+      <td>{{tx_bytes}}</td>
+      <td><a href="/view_pet/{{name}}"><img src="{% static icon %}" width="10%" height="10%" style="display: inline-block;"></a></td>
+    </tr>
+    <tr>
+      <td colspan="4">
+        <div id="rainbowContainer" style="width: 100%;">
+          <div id="rainbow" style="width: {{percentage}}%;"></div>
+          <div id="nyanCat"></div>
+        </div>
+      </td>
+    </tr>
+    {% endfor %}
+  </table>
+
+</body>
+
+</html>
