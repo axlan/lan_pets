@@ -172,8 +172,18 @@ class LoggingTimeFilter(logging.Filter):
         record.unix_time = int(time.time())
         return True
 
+
 T = TypeVar('T')
 def filter_set(input: Iterable[T], field: str, values: Iterable[Any]) -> set[T]:
     return {
         i for i in input if getattr(i, field) in values
     }
+
+
+def sizeof_fmt(num, suffix="B"):
+    for unit in ("", "Ki", "Mi", "Gi", "Ti", "Pi", "Ei", "Zi"):
+        if abs(num) < 1024.0:
+            return f"{num:3.1f}{unit}{suffix}"
+        num /= 1024.0
+    return f"{num:.1f}Yi{suffix}"
+

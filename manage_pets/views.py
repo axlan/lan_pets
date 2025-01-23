@@ -15,7 +15,7 @@ from django.views.decorators.csrf import csrf_exempt
 
 from avatar_gen.generate_avatar import get_pet_avatar
 from manage_pets.models import PetData
-from pet_monitor.common import CONSOLE_LOG_FILE, get_timestamp_age_str
+from pet_monitor.common import CONSOLE_LOG_FILE, get_timestamp_age_str, sizeof_fmt
 from pet_monitor.network_scanner import NetworkScanner
 from pet_monitor.pet_ai import PetAi
 from pet_monitor.ping import Pinger
@@ -137,8 +137,8 @@ def view_data_usage(request):
         pet_data.append((
             name,
             available,
-            rx_bytes,
-            tx_bytes,
+            sizeof_fmt(rx_bytes),
+            sizeof_fmt(tx_bytes),
             larger_byte_val / max_bytes * 100.0,
             get_pet_avatar(_STATIC_PATH, device_types[name], name, info.mac).name  
         ))
