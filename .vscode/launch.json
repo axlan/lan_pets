@@ -12,6 +12,15 @@
             "justMyCode": false
         },
         {
+            "name": "get_device_stats.py",
+            "type": "debugpy",
+            "request": "launch",
+            "program": "${workspaceFolder}/pet_monitor/snmp/get_device_stats.py",
+            "console": "integratedTerminal",
+            "justMyCode": false,
+            "args": ["192.168.1.1", "public"]
+        },
+        {
             "name": "Python Debugger: Current File",
             "type": "debugpy",
             "request": "launch",

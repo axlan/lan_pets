@@ -74,9 +74,11 @@ NMAP is a tool for mapping out networks. It primarily relies on attempting to op
 When it comes to discovering the presence of devices on the network, there are a few important behaviors I noticed. First, to get the MAC address of the devices it's scanning, it needs to be on the same LAN segment. Second, it's behavior is very different when it is run as a privileged (root) user. I found that when running without root, less devices were discovered, and the broadcasts NMAP was sending would wake Windows machines from sleep.
 
 # TODO
-Add a "last seen" timestamp to discovery to potentially age out ephemeral devices
+
+Add SNMP to router to populate detected devices
+Refactor services to run in seperate threads / make get function fully generic
+Formalize the plugin interface for discovery, availability, bandwidth, or other metrics
 Add button to do full NMAP scan on device and save result for viewing.
-On management page, show last seen info
 When pihole 6 is released, add integration into pihole API
 Have option to use NMAP for ping?
 Handle case where device has mutliple NIC's
