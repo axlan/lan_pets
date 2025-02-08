@@ -11,3 +11,4 @@ autopep8
 isort
 python-nmap
 pysnmp
+pytest
