@@ -1,189 +1,21 @@
 
 from collections import defaultdict
-from enum import IntEnum
-import json
-import logging
 import os
 import sqlite3
 import io
 import time
-from pathlib import Path
-from typing import Any, Collection, Iterable, NamedTuple, Optional, TypeAlias, TypeVar, Type
+from typing import Iterable, Optional, TypeAlias
 
-import numpy as np
 import plotly.graph_objects as go
 from plotly.subplots import make_subplots
 import plotly_express as px
 import pandas as pd
 
-from pet_monitor.common import DATA_DIR, get_timestamp_age_str
+from pet_monitor.common import DATA_DIR, PetInfo, NetworkInterfaceInfo, TrafficStats, Mood, Relationship, RelationshipMap, map_pets_to_devices
 
 _DB_PATH = DATA_DIR / 'lan_pets_db.sqlite3'
 
-_logger = logging.getLogger(__name__)
-
 StrOrBytesPath: TypeAlias = str | bytes | os.PathLike[str] | os.PathLike[bytes]  # stable
-
-
-class IdentifierType(IntEnum):
-    MAC = 1
-    HOST = 2
-    IP = 3
-
-
-class DeviceType(IntEnum):
-    PC = 1
-    LAPTOP = 2
-    PHONE = 3
-    IOT = 4
-    SERVER = 5
-    ROUTER = 6
-    MEDIA = 7
-    GAMES = 8
-    OTHER = 9
-
-
-class Mood(IntEnum):
-    JOLLY = 1
-    SASSY = 2
-    CALM = 3
-    MODEST = 4
-    DREAMY = 5
-    IMPISH = 6
-    SNEAKY = 7
-    SHY = 8
-
-
-class Relationship(IntEnum):
-    FRIENDS = 1
-
-
-class PetInfo(NamedTuple):
-    name: str
-    identifier_type: IdentifierType
-    identifier_value: str
-    device_type: DeviceType
-    description: str = ''
-    mood: Mood = Mood.JOLLY
-
-
-class NetworkInterfaceInfo(NamedTuple):
-    '''
-    Information gathered from network.
-    '''
-    # Unix time of last update.
-    timestamp: int = 0
-    # MAC address of interface.
-    mac: Optional[str] = None
-    # IPv4 address of interface.
-    ip: Optional[str] = None
-    # Normal DNS hostname
-    dns_hostname: Optional[str] = None
-    description_json: str = '{}'
-
-    def get_description(self) -> dict[str, str]:
-        return json.loads(self.description_json)
-
-    def replace_description(self, description: dict[str, str]) -> 'NetworkInterfaceInfo':
-        return self._replace(description_json=json.dumps(description, sort_keys=True))
-
-    def get_timestamp_age_str(self, now_interval=0) -> str:
-        return get_timestamp_age_str(self.timestamp, now_interval)
-
-    def is_duplicate(self, other: 'NetworkInterfaceInfo') -> bool:
-        def _match(a: Optional[str], b: Optional[str]) -> bool:
-            return a is not None and a == b
-        return _match(self.ip, other.ip) or _match(self.mac, other.mac) or _match(
-            self.dns_hostname, other.dns_hostname)
-
-    @staticmethod
-    def merge(vals1: Iterable['NetworkInterfaceInfo'],
-              vals2: Iterable['NetworkInterfaceInfo']) -> set['NetworkInterfaceInfo']:
-        results = set()
-        potential_matches = set(vals2)
-        for v1 in vals1:
-            # Check for duplicates.
-            is_duplicate = False
-            for v2 in potential_matches:
-                if v1.is_duplicate(v2):
-                    newer_record, older_record_dict = (
-                        (v1, v2._asdict()) if v1.timestamp > v2.timestamp else (
-                            v2, v1._asdict()))
-                    new_description = json.loads(older_record_dict['description_json'])
-                    new_description.update(newer_record.get_description())
-                    missing = {'description_json': json.dumps(new_description, sort_keys=True)}
-                    for k, v in newer_record._asdict().items():
-                        if v is None:
-                            missing[k] = older_record_dict[k]
-
-                    results.add(newer_record._replace(**missing))
-                    is_duplicate = True
-                    potential_matches.remove(v2)
-                    break
-
-            if not is_duplicate:
-                results.add(v1)
-        return results.union(potential_matches)
-
-    @staticmethod
-    def filter_duplicates(vals: Iterable['NetworkInterfaceInfo']) -> set['NetworkInterfaceInfo']:
-        results = set()
-        for v1 in vals:
-            # Check for duplicates.
-            is_duplicate = False
-            for v2 in results:
-                if v1.is_duplicate(v2):
-                    is_duplicate = True
-                    break
-
-            if not is_duplicate:
-                results.add(v1)
-        return results
-
-
-class TrafficStats(NamedTuple):
-    rx_bytes: float = 0
-    tx_bytes: float = 0
-    timestamp: int = 0
-    rx_bytes_bps: float = 0
-    tx_bytes_bps: float = 0
-
-
-class RelationshipMap:
-    def __init__(self) -> None:
-        self.relationships: set[tuple[str, str, Relationship]] = set()
-
-    def _get_entry(self, name1: str, name2: str):
-        value = None
-        for info in self.relationships:
-            if name1 in info and name2 in info:
-                value = info
-                break
-        return value
-
-    def add(self, name1: str, name2: str, relationship: Relationship):
-        self.relationships.add((name1, name2, relationship))
-
-    def remove(self, name1: str, name2: str):
-        value = self._get_entry(name1, name2)
-        if value is not None:
-            self.relationships.remove(value)
-
-    def get_relationships(self, name: str) -> dict[str, Relationship]:
-        this_relationship: dict[str, Relationship] = {}
-        for info in self.relationships:
-            if info[0] == name:
-                this_relationship[info[1]] = info[2]
-            elif info[1] == name:
-                this_relationship[info[0]] = info[2]
-        return this_relationship
-
-    def get_relationship(self, name1: str, name2: str) -> Optional[Relationship]:
-        value = self._get_entry(name1, name2)
-        if value is not None:
-            return value[2]
-        return None
-
 
 NETWORK_INFO_SCHEMA_SQL = '''\
 CREATE TABLE IF NOT EXISTS network_info (
@@ -227,7 +59,7 @@ CREATE TABLE IF NOT EXISTS traffic_stats (
 '''
 
 AVAILABILITY_SCHEMA_SQL = '''\
-CREATE TABLE device_availability (
+CREATE TABLE IF NOT EXISTS device_availability (
     name_id INT,                   -- Name of the device
     is_availabile BOOLEAN,         -- Was available
     timestamp INTEGER DEFAULT (strftime('%s', 'now')), -- Unix time of observation
@@ -235,13 +67,18 @@ CREATE TABLE device_availability (
 );'''
 
 PET_RELATIONSHIPS_SCHEMA_SQL = '''\
-CREATE TABLE pet_relationships (
+CREATE TABLE IF NOT EXISTS pet_relationships (
     name1_id INT,                   -- Name that comes first alphabetically
     name2_id INT,                   -- Name that comes last alphabetically
     relationship INT,               -- Relationship between pets
     FOREIGN KEY(name1_id) REFERENCES pet_info(row_id) ON DELETE CASCADE,
     FOREIGN KEY(name2_id) REFERENCES pet_info(row_id) ON DELETE CASCADE
 );'''
+
+
+_hard_coded_pet_interfaces = {}
+def set_hard_coded_pet_interfaces(info: dict[str, NetworkInterfaceInfo]):
+    _hard_coded_pet_interfaces.update(info)
 
 
 def get_db_connection(db_path: StrOrBytesPath = _DB_PATH) -> sqlite3.Connection:
@@ -292,23 +129,6 @@ def get_pet_info(conn: sqlite3.Connection) -> set[PetInfo]:
         WHERE NOT is_deleted;"""
     cur.execute(QUERY)
     return set(PetInfo(*r) for r in cur.fetchall())
-
-
-def map_pets_to_devices(devices: Iterable[NetworkInterfaceInfo],
-                        pets: Iterable[PetInfo]) -> dict[str, NetworkInterfaceInfo]:
-    matches: dict[str, NetworkInterfaceInfo] = {}
-    for pet in pets:
-        field_name = {
-            IdentifierType.IP: 'ip',
-            IdentifierType.MAC: 'mac',
-            IdentifierType.HOST: 'dns_hostname',
-        }[pet.identifier_type]
-        matches[pet.name] = NetworkInterfaceInfo(**{field_name: pet.identifier_value})  # type: ignore
-        for device in devices:
-            if getattr(device, field_name) == pet.identifier_value:
-                matches[pet.name] = device
-                break
-    return matches
 
 
 def add_network_info(conn: sqlite3.Connection, new_interface: NetworkInterfaceInfo):
@@ -370,7 +190,7 @@ def get_network_info(conn: sqlite3.Connection) -> set[NetworkInterfaceInfo]:
 
 
 def get_network_info_for_pets(conn: sqlite3.Connection, pets: Iterable[PetInfo]) -> dict[str, NetworkInterfaceInfo]:
-    return map_pets_to_devices(get_network_info(conn), pets)
+    return {**_hard_coded_pet_interfaces, **map_pets_to_devices(get_network_info(conn), pets)}
 
 
 def add_pet_availability(conn: sqlite3.Connection, pet_name: str, is_available: bool, timestamp=int(time.time())):
@@ -622,3 +442,21 @@ def remove_relationship(conn: sqlite3.Connection, name1: str, name2: str):
             WHERE name1.name = ? AND name2.name = ?
         );""", names)
     conn.commit()
+
+
+def _delete_entries_before(conn: sqlite3.Connection, table: str, cutoff_time: int) -> None:
+    conn.execute(f"DELETE FROM {table} WHERE timestamp < ?;", (cutoff_time,))
+    conn.commit()
+
+
+def _delete_old_entries(conn: sqlite3.Connection, table: str, max_age_sec: int) -> None:
+    cutoff_time = int(time.time() - max_age_sec)
+    _delete_entries_before(conn, table, cutoff_time)
+
+
+def delete_old_traffic_stats(conn: sqlite3.Connection, max_age_sec: int) -> None:
+    _delete_old_entries(conn, 'traffic_stats', max_age_sec)
+
+
+def delete_old_availablity(conn: sqlite3.Connection, max_age_sec: int) -> None:
+    _delete_old_entries(conn, 'device_availability', max_age_sec)

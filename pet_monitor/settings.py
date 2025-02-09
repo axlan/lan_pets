@@ -81,7 +81,7 @@ class Settings(NamedTuple):
     nmap_settings: Optional[NMAPSettings] = NMAPSettings()
 
     # List of clients to include even if they aren't discovered
-    hard_coded_interface_info: set[NetworkInterfaceInfo] = set()
+    hard_coded_pet_interfaces: dict[str, NetworkInterfaceInfo] = {}
 
     # How long to sleep between checking services
     main_loop_sleep_sec = 0.1
@@ -91,24 +91,8 @@ class Settings(NamedTuple):
     # Time window to draw in plots.
     plot_data_window_sec = MAX_HISTORY_LEN_SEC
 
-    pinger_settings = PingerSettings()
+    pinger_settings:Optional[PingerSettings] = PingerSettings()
     pet_ai_settings = PetAISettings()
-
-
-class RateLimiter:
-    def __init__(self, update_period_sec) -> None:
-        self.update_period_sec = update_period_sec
-        self.last_update = float('-inf')
-
-    def get_ready(self) -> bool:
-        if not self.is_ready():
-            return False
-        else:
-            self.last_update = time.monotonic()
-            return True
-
-    def is_ready(self) -> bool:
-        return time.monotonic() - self.last_update > self.update_period_sec
 
 
 def get_settings() -> Settings:
