@@ -10,7 +10,7 @@ from pet_monitor.service_base import ServiceBase, run_services
 from pet_monitor.pet_ai import PetAi
 from pet_monitor.ping import Pinger
 from pet_monitor.nmap.nmap_scraper import NMAPScraper
-from pet_monitor.tplink_scraper.scraper import TPLinkScraper
+# from pet_monitor.tplink_scraper.scraper import TPLinkScraper
 from pet_monitor.settings import get_settings
 
 _logger = logging.getLogger('pet_monitor.pet_monitor_service')
@@ -39,8 +39,8 @@ def main():
     # if settings.tplink_settings:
     #     services.append(TPLinkScraper(settings.tplink_settings))
         
-    # if settings.nmap_settings:
-    #     services.append(NMAPScraper(settings.nmap_settings))
+    if settings.nmap_settings:
+        services.append(NMAPScraper(stop_condition, settings.nmap_settings))
 
     if settings.pinger_settings:
         services.append(Pinger(stop_condition, settings.pinger_settings))

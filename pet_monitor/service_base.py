@@ -39,6 +39,7 @@ class ServiceBase:
     def _run_loop(self) -> None:
             try:
                 while self.is_running:
+                    self._check()
                     if not self.rate_limiter.get_ready():
                         time.sleep(0.1)
                         continue
@@ -47,6 +48,9 @@ class ServiceBase:
                 _logger.error('Unhandled Exception:', exc_info=True)
             with self.stop_condition:
                 self.stop_condition.notify()
+
+    def _check(self) -> None:
+        pass
 
     def _update(self) -> None:
         pass
