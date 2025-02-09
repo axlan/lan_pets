@@ -17,21 +17,6 @@ from pet_monitor.settings import NMAPSettings, get_settings
 _logger = logging.getLogger(__name__)
 
 
-SCHEMA_SQL = '''\
-CREATE TABLE nmap_results (
-    row_id INTEGER NOT NULL,
-    timestamp INTEGER NOT NULL,     -- Unix time of observation
-    ip VARCHAR(15) NOT NULL,       -- IP address (format: IPv4).
-    mac VARCHAR(17),               -- MAC address (format: XX-XX-XX-XX-XX-XX). NULL if not available.
-    host_name VARCHAR(255),        -- Name of the client. NULL if not available.
-    UNIQUE (mac),                            -- Ensure MAC addresses are unique
-    UNIQUE (ip),                            -- Ensure IP addresses are unique
-    UNIQUE (host_name),         -- Ensure host names addresses are unique
-    PRIMARY KEY(row_id)
-);
-'''
-
-
 class NMAPScraper(ServiceBase):
     def __init__(self, stop_condition: Condition, settings: NMAPSettings) -> None:
         super().__init__(settings.time_between_scans, stop_condition)

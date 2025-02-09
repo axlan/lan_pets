@@ -4,7 +4,7 @@ from typing import NamedTuple
 
 from pet_monitor.network_db import get_db_connection, get_pet_info, load_mean_traffic, load_current_availability, load_availability_mean, get_relationship_map, update_pet_mood, add_relationship, remove_relationship
 from pet_monitor.service_base import ServiceBase, Condition
-from pet_monitor.common import (Mood, Relationship, get_cutoff_time)
+from pet_monitor.common import (Mood, Relationship, get_cutoff_timestamp)
 from pet_monitor.settings import MoodAlgorithm, PetAISettings
 
 _logger = logging.getLogger(__name__)
@@ -44,11 +44,8 @@ class PetAi(ServiceBase):
         self.settings = settings
 
     def _update(self) -> None:
-        if not self.rate_limiter.get_ready():
-            return
-
         conn = get_db_connection()
-        cutoff_time = get_cutoff_time(self.settings.history_window_sec)
+        cutoff_time = get_cutoff_timestamp(self.settings.history_window_sec)
 
         pet_info = get_pet_info(conn)
         pet_names = (p.name for p in pet_info)

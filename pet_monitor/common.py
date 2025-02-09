@@ -121,6 +121,11 @@ class NetworkInterfaceInfo(NamedTuple):
 
     def replace_description(self, description: dict[str, str]) -> 'NetworkInterfaceInfo':
         return self._replace(description_json=json.dumps(description, sort_keys=True))
+    
+    def replace_description_field(self, name: str, value: str) -> 'NetworkInterfaceInfo':
+        description = self.get_description()
+        description[name] = value
+        return self._replace(description_json=json.dumps(description, sort_keys=True))
 
     def get_timestamp_age_str(self, now_interval=0) -> str:
         return get_timestamp_age_str(self.timestamp, now_interval)
@@ -193,7 +198,7 @@ def map_pets_to_devices(devices: Iterable[NetworkInterfaceInfo],
     return matches
 
 
-def get_cutoff_time(max_age_sec) -> int:
+def get_cutoff_timestamp(max_age_sec) -> int:
     return int(time.time() - max_age_sec)
 
 

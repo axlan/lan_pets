@@ -25,7 +25,7 @@ class RateLimiter:
 
 class ServiceBase:
     def __init__(self, update_period_sec: float, stop_condition: Condition) -> None:
-        self.rate_limiter = RateLimiter(update_period_sec)
+        self._rate_limiter = RateLimiter(update_period_sec)
         self.is_running = False
         self.stop_condition = stop_condition
         self.thread: Optional[Thread] = None
@@ -40,7 +40,7 @@ class ServiceBase:
             try:
                 while self.is_running:
                     self._check()
-                    if not self.rate_limiter.get_ready():
+                    if not self._rate_limiter.get_ready():
                         time.sleep(0.1)
                         continue
                     self._update()

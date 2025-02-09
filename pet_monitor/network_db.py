@@ -19,7 +19,7 @@ from pet_monitor.common import (
     Relationship,
     RelationshipMap,
     TrafficStats,
-    get_cutoff_time,
+    get_cutoff_timestamp,
     map_pets_to_devices,
 )
 
@@ -464,18 +464,18 @@ def remove_relationship(conn: sqlite3.Connection, name1: str, name2: str):
     conn.commit()
 
 
-def _delete_entries_before(conn: sqlite3.Connection, table: str, cutoff_time: int) -> None:
-    conn.execute(f"DELETE FROM {table} WHERE timestamp < ?;", (cutoff_time,))
+def _delete_entries_before(conn: sqlite3.Connection, table: str, cutoff_timestamp) -> None:
+    conn.execute(f"DELETE FROM {table} WHERE timestamp < ?;", (cutoff_timestamp,))
     conn.commit()
 
 
-def _delete_old_entries(conn: sqlite3.Connection, table: str, max_age_sec: int) -> None:
-    _delete_entries_before(conn, table, get_cutoff_time(max_age_sec))
+def _delete_old_entries(conn: sqlite3.Connection, table: str, max_age_sec) -> None:
+    _delete_entries_before(conn, table, get_cutoff_timestamp(max_age_sec))
 
 
-def delete_old_traffic_stats(conn: sqlite3.Connection, max_age_sec: int) -> None:
+def delete_old_traffic_stats(conn: sqlite3.Connection, max_age_sec) -> None:
     _delete_old_entries(conn, 'traffic_stats', max_age_sec)
 
 
-def delete_old_availablity(conn: sqlite3.Connection, max_age_sec: int) -> None:
+def delete_old_availablity(conn: sqlite3.Connection, max_age_sec) -> None:
     _delete_old_entries(conn, 'device_availability', max_age_sec)

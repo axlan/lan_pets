@@ -10,7 +10,7 @@ from pet_monitor.service_base import ServiceBase, run_services
 from pet_monitor.pet_ai import PetAi
 from pet_monitor.ping import Pinger
 from pet_monitor.nmap.nmap_scraper import NMAPScraper
-# from pet_monitor.tplink_scraper.scraper import TPLinkScraper
+from pet_monitor.tplink_scraper.scraper import TPLinkScraper
 from pet_monitor.settings import get_settings
 
 _logger = logging.getLogger('pet_monitor.pet_monitor_service')
@@ -32,12 +32,13 @@ def main():
     logger_group.setLevel(logging.DEBUG)
 
     settings = get_settings()
+    set_hard_coded_pet_interfaces(settings.hard_coded_pet_interfaces)
 
     stop_condition = Condition()
     services: list[ServiceBase] = []
     
-    # if settings.tplink_settings:
-    #     services.append(TPLinkScraper(settings.tplink_settings))
+    if settings.tplink_settings:
+        services.append(TPLinkScraper(stop_condition, settings.tplink_settings))
         
     if settings.nmap_settings:
         services.append(NMAPScraper(stop_condition, settings.nmap_settings))
@@ -48,7 +49,6 @@ def main():
     if settings.pet_ai_settings:
         services.append(PetAi(stop_condition, settings.pet_ai_settings))
 
-    set_hard_coded_pet_interfaces(settings.hard_coded_pet_interfaces)
     run_services(stop_condition, services)
 
     _logger.debug('Monitor shutdown')
