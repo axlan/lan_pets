@@ -81,7 +81,9 @@ class Settings(NamedTuple):
     nmap_settings: Optional[NMAPSettings] = NMAPSettings()
 
     # List of clients to include even if they aren't discovered
-    hard_coded_pet_interfaces: dict[str, NetworkInterfaceInfo] = {}
+    hard_coded_pet_interfaces: dict[str, NetworkInterfaceInfo] = {
+        'bee': NetworkInterfaceInfo(ip='192.168.1.110')
+    }
 
     # How long to sleep between checking services
     main_loop_sleep_sec = 0.1

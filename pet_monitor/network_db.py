@@ -1,17 +1,27 @@
 
-from collections import defaultdict
+import io
 import os
 import sqlite3
-import io
 import time
+from collections import defaultdict
 from typing import Iterable, Optional, TypeAlias
 
-import plotly.graph_objects as go
-from plotly.subplots import make_subplots
-import plotly_express as px
 import pandas as pd
+import plotly.graph_objects as go
+import plotly_express as px
+from plotly.subplots import make_subplots
 
-from pet_monitor.common import DATA_DIR, PetInfo, NetworkInterfaceInfo, TrafficStats, Mood, Relationship, RelationshipMap, map_pets_to_devices
+from pet_monitor.common import (
+    DATA_DIR,
+    Mood,
+    NetworkInterfaceInfo,
+    PetInfo,
+    Relationship,
+    RelationshipMap,
+    TrafficStats,
+    get_cutoff_time,
+    map_pets_to_devices,
+)
 
 _DB_PATH = DATA_DIR / 'lan_pets_db.sqlite3'
 
@@ -77,6 +87,8 @@ CREATE TABLE IF NOT EXISTS pet_relationships (
 
 
 _hard_coded_pet_interfaces = {}
+
+
 def set_hard_coded_pet_interfaces(info: dict[str, NetworkInterfaceInfo]):
     _hard_coded_pet_interfaces.update(info)
 
@@ -207,14 +219,14 @@ def load_last_seen(conn: sqlite3.Connection, names: Iterable[str]) -> dict[str, 
     results = {n: 0 for n in names}
     cur = conn.cursor()
     cur.execute("""
-        SELECT 
+        SELECT
             pet_info.name,
-            MAX(device_availability.timestamp) 
-        FROM 
+            MAX(device_availability.timestamp)
+        FROM
             device_availability
         INNER JOIN pet_info ON pet_info.row_id = device_availability.name_id
         WHERE device_availability.is_availabile
-        GROUP BY 
+        GROUP BY
             device_availability.name_id;""")
     results.update({r[0]: r[1] for r in cur.fetchall() if r[0] in names})
     return results
@@ -266,7 +278,8 @@ def load_availability_mean(conn: sqlite3.Connection, names: Iterable[str], since
     return availability
 
 
-def generate_uptime_plot(conn: sqlite3.Connection, name: str, since_timestamp=0.0, time_zone='America/Los_Angeles') -> bytes:
+def generate_uptime_plot(conn: sqlite3.Connection, name: str, since_timestamp=0.0,
+                         time_zone='America/Los_Angeles') -> bytes:
     df = load_availability(conn, [name], since_timestamp)
     df = df[(df['name'] == name)]
     df['timestamp'] = pd.to_datetime(df['timestamp'], unit='s', utc=True).dt.tz_convert(time_zone)
@@ -298,7 +311,8 @@ def get_history_len(conn: sqlite3.Connection, names: Iterable[str]) -> dict[str,
     return availability
 
 
-def add_traffic_for_pet(conn: sqlite3.Connection, pet_name: str, rx_bytes: int, tx_bytes: int, timestamp=int(time.time())):
+def add_traffic_for_pet(conn: sqlite3.Connection, pet_name: str, rx_bytes: int,
+                        tx_bytes: int, timestamp=int(time.time())):
     QUERY = """
             INSERT INTO traffic_stats (name_id, rx_bytes, tx_bytes, timestamp)
             SELECT pet.row_id, ?, ?, ?
@@ -351,10 +365,16 @@ def get_mean_traffic(pet_bps_set: dict[str, pd.DataFrame], ignore_zero=True) -> 
             bps_col = f'{col}_bps'
             diffs = pet_df[bps_col]
             valid_diffs = diffs > 0 if ignore_zero else True
-            metrics[bps_col] = (diffs[valid_diffs] / durations[valid_diffs]).mean() # type: ignore
+            metrics[bps_col] = (diffs[valid_diffs] / durations[valid_diffs]).mean()  # type: ignore
             metrics[col] = diffs[valid_diffs].sum()
         results[name] = TrafficStats(**metrics)
     return results
+
+
+def load_mean_traffic(conn: sqlite3.Connection,
+                      names: Iterable[str], since_timestamp: float, ignore_zero=True) -> dict[str, TrafficStats]:
+    pet_bps_set = load_bps(conn, names, since_timestamp)
+    return get_mean_traffic(pet_bps_set, ignore_zero)
 
 
 def generate_traffic_plot(df: pd.DataFrame, sample_rate='1h', time_zone='America/Los_Angeles') -> bytes:
@@ -450,8 +470,7 @@ def _delete_entries_before(conn: sqlite3.Connection, table: str, cutoff_time: in
 
 
 def _delete_old_entries(conn: sqlite3.Connection, table: str, max_age_sec: int) -> None:
-    cutoff_time = int(time.time() - max_age_sec)
-    _delete_entries_before(conn, table, cutoff_time)
+    _delete_entries_before(conn, table, get_cutoff_time(max_age_sec))
 
 
 def delete_old_traffic_stats(conn: sqlite3.Connection, max_age_sec: int) -> None:

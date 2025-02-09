@@ -193,6 +193,10 @@ def map_pets_to_devices(devices: Iterable[NetworkInterfaceInfo],
     return matches
 
 
+def get_cutoff_time(max_age_sec) -> int:
+    return int(time.time() - max_age_sec)
+
+
 class TrafficStats(NamedTuple):
     rx_bytes: float = 0
     tx_bytes: float = 0
