@@ -4,14 +4,7 @@ from typing import Generator, Iterable
 
 from icmplib import ping
 
-from pet_monitor.network_db import (
-    add_pet_availability,
-    delete_old_availablity,
-    get_db_connection,
-    get_network_info_for_pets,
-    get_pet_info,
-    set_hard_coded_pet_interfaces,
-)
+from pet_monitor.network_db import DBInterface
 from pet_monitor.service_base import Condition, ServiceBase, run_services
 from pet_monitor.settings import PingerSettings, get_settings
 
@@ -47,23 +40,23 @@ class Pinger(ServiceBase):
         self.settings = settings
 
     def _update(self) -> None:
-        conn = get_db_connection()
-        # Clear old data.
-        delete_old_availablity(conn, int(self.settings.history_len))
+        with DBInterface() as db_interface:
+            # Clear old data.
+            db_interface.delete_old_availablity(int(self.settings.history_len))
 
-        pet_info = get_pet_info(conn)
-        pet_device_map = get_network_info_for_pets(conn, pet_info)
+            pet_info = db_interface.get_pet_info()
+            pet_device_map = db_interface.get_network_info_for_pets(pet_info)
 
-        hosts = set()
-        for name, device in pet_device_map.items():
-            if device.ip is not None:
-                hosts.add((name, device.ip))
-            elif device.dns_hostname is not None:
-                hosts.add((name, device.dns_hostname))
+            hosts = set()
+            for name, device in pet_device_map.items():
+                if device.ip is not None:
+                    hosts.add((name, device.ip))
+                elif device.dns_hostname is not None:
+                    hosts.add((name, device.dns_hostname))
 
-        # Ideally, don't block on this. Leaving the scope waits for all threads to finish.
-        for name, is_online in _ping_in_parallel(hosts):
-            add_pet_availability(conn, name, is_online)
+            # Ideally, don't block on this. Leaving the scope waits for all threads to finish.
+            for name, is_online in _ping_in_parallel(hosts):
+                db_interface.add_pet_availability(name, is_online)
 
 
 def main():
@@ -74,7 +67,7 @@ def main():
         print("Pinger settings not found.")
         return
 
-    set_hard_coded_pet_interfaces(settings.hard_coded_pet_interfaces)
+    DBInterface.set_hard_coded_pet_interfaces(settings.hard_coded_pet_interfaces)
     stop_condition = Condition()
     pinger = Pinger(stop_condition, settings.pinger_settings)
     run_services(stop_condition, [pinger])

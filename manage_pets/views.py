@@ -2,7 +2,6 @@ import base64
 import logging
 import os
 import re
-import time
 from datetime import UTC, date, datetime
 from pathlib import Path
 from random import randrange
@@ -14,13 +13,19 @@ from django.shortcuts import redirect, render
 from django.views.decorators.csrf import csrf_exempt
 
 from avatar_gen.generate_avatar import get_pet_avatar
-from manage_pets.models import PetData
-from pet_monitor.common import CONSOLE_LOG_FILE, get_timestamp_age_str, sizeof_fmt
-from pet_monitor.network_scanner import NetworkScanner
-from pet_monitor.pet_ai import PetAi
-from pet_monitor.ping import Pinger
+from pet_monitor.common import (
+    CONSOLE_LOG_FILE,
+    DeviceType,
+    IdentifierType,
+    PetInfo,
+    TrafficStats,
+    get_timestamp_age_str,
+    map_pets_to_devices,
+    sizeof_fmt,
+    get_cutoff_timestamp
+)
+from pet_monitor.network_db import DBInterface
 from pet_monitor.settings import get_settings
-from pet_monitor.tplink_scraper.scraper import TrafficStats
 
 logger = logging.getLogger(__name__)
 
@@ -37,174 +42,167 @@ greetings = [line.strip() for line in open('data/greetings.txt').readlines()]
 
 @csrf_exempt
 def manage_pets(request):
-    if request.method == "POST":
-        name = request.POST.get('pet-name')
-        id_type = PetData.PrimaryIdentifier[request.POST.get('id-type')]
-        device_type = PetData.DeviceType[request.POST.get('device-type')]
-        pet_id = request.POST.get('pet-id')
-        logger.info(f'Adding pet [name={name}, id_type={id_type}, id={pet_id}]')
-        PetData.objects.create(name=name, identifier_type=id_type, identifier_value=pet_id, device_type=device_type)
+    with DBInterface() as db_interface:
+        if request.method == "POST":
+            name = request.POST.get('pet-name')
+            id_type = IdentifierType[request.POST.get('id-type')]
+            device_type = DeviceType[request.POST.get('device-type')]
+            pet_id = request.POST.get('pet-id')
+            logger.info(f'Adding pet [name={name}, id_type={id_type}, id={pet_id}]')
+            db_interface.add_pet_info(PetInfo(
+                name=name,
+                identifier_type=id_type,
+                device_type=device_type,
+                identifier_value=pet_id
+            ))
 
-    pets = list(PetData.objects.iterator())
-    scanner = NetworkScanner(_MONITOR_SETTINGS)
-    discovered_devices = scanner.get_discovered_devices()
-    mapped_pets = scanner.map_pets_to_devices(discovered_devices, pets)
-    last_seen_timestamps = Pinger(_MONITOR_SETTINGS.pinger_settings).load_last_seen([p.name for p in pets])
+        pets = db_interface.get_pet_info()
+        discovered_devices = db_interface.get_network_info()
+        mapped_pets = map_pets_to_devices(discovered_devices, pets)
+        last_seen_timestamps = db_interface.load_last_seen([p.name for p in pets])
 
-    #     friend_rows = '''\
-    # ["Nala", "Happy", "^._.^"],
-    # ["Rail Blazer", "Sad", "Hi"]
-    # '''
-    friend_rows = []
-    pet_ai = PetAi(_MONITOR_SETTINGS.pet_ai_settings)
-    for pet in PetData.objects.iterator():
-        device = mapped_pets[pet.name]
-        timestamp = last_seen_timestamps[pet.name]
-        # Remove from list so they don't show up twice time.
-        if device in discovered_devices:
-            discovered_devices.remove(device)
-        mac_address = device.mac
-        avatar_path = get_pet_avatar(_STATIC_PATH, pet.device_type, pet.name, mac_address)
-        mood = pet_ai.get_moods([pet.name])[pet.name].name
-        friend_rows.append(
-            f'["{pet.name}", "{get_timestamp_age_str(timestamp, now_interval=60)}", "{mood.title()}", "{greetings[randrange(len(greetings))]}", "{pet.device_type}", "{avatar_path.name}"]')
-    friend_rows = ',\n'.join(friend_rows)
+        #     friend_rows = '''\
+        # ["Nala", "Happy", "^._.^"],
+        # ["Rail Blazer", "Sad", "Hi"]
+        # '''
+        friend_rows = []
+        for pet in pets:
+            device = mapped_pets[pet.name]
+            timestamp = last_seen_timestamps[pet.name]
+            # Remove from list so they don't show up twice time.
+            if device in discovered_devices:
+                discovered_devices.remove(device)
+            mac_address = device.mac
+            avatar_path = get_pet_avatar(_STATIC_PATH, pet.device_type.name, pet.name, mac_address)
+            mood = pet.mood.name
+            friend_rows.append(
+                f'["{pet.name}", "{get_timestamp_age_str(timestamp, now_interval=60)}", "{mood.title()}", "{greetings[randrange(len(greetings))]}", "{pet.device_type.name}", "{avatar_path.name}"]')
+        friend_rows = ',\n'.join(friend_rows)
 
-    # Format scraper results into JS table.
-    router_rows = ''
-    rows = []
-    for device in discovered_devices:
-        client_name = device.dns_hostname if device.dhcp_name is None else device.dhcp_name
-        record = [client_name, device.get_timestamp_age_str(now_interval=10*60), device.router_description, device.ip, device.mac]
-        values = ['"?"' if r is None else f'"{r}"' for r in record]
-        values = ",".join(values)
-        rows.append(f'[{values}]')
-    router_rows = ',\n'.join(rows)
+        # Format scraper results into JS table.
+        router_rows = ''
+        rows = []
+        for device in discovered_devices:
+            record = [
+                device.get_name(),
+                device.get_timestamp_age_str(
+                    now_interval=10 * 60),
+                device.get_description_str(),
+                device.ip,
+                device.mac]
+            values = ['"?"' if r is None else f'"{r}"' for r in record]
+            values = ",".join(values)
+            rows.append(f'[{values}]')
+        router_rows = ',\n'.join(rows)
 
-    return render(request, "manage_pets/manage_pets.html",
-                  {'friend_rows': friend_rows, "router_results_exist": True, "router_rows": router_rows})
+        return render(request, "manage_pets/manage_pets.html",
+                    {'friend_rows': friend_rows, "router_results_exist": True, "router_rows": router_rows})
 
 
 def view_relationships(request):
-    names:set[str] = set()
-    icons:dict[str, str] = {}
-    pets = list(PetData.objects.iterator())
-    scanner = NetworkScanner(_MONITOR_SETTINGS)
-    mapped_pets = scanner.map_pets_to_devices(scanner.get_discovered_devices(), pets)
-    for pet in pets:
-        names.add(pet.name)
-        mac_address = mapped_pets[pet.name].mac
-        icons[pet.name] = get_pet_avatar(_STATIC_PATH, pet.device_type, pet.name, mac_address).name
+    with DBInterface() as db_interface:
+        icons: dict[str, str] = {}
+        pets = db_interface.get_pet_info()
+        mapped_pets = db_interface.get_network_info_for_pets(pets)
+        for pet in pets:
+            mac_address = mapped_pets[pet.name].mac
+            icons[pet.name] = get_pet_avatar(_STATIC_PATH, pet.device_type.name, pet.name, mac_address).name
 
-    pet_ai = PetAi(_MONITOR_SETTINGS.pet_ai_settings)
-    relationships = pet_ai.get_all_relationships()
-    pet_data = {(n, pet_ai.get_moods(names)[n].name.lower(), icons[n]) for n in names}
-    relationships = {(r[0], r[1], r[2].name.lower(), ) for r in relationships}
-    return render(request, "manage_pets/view_relationships.html", {'pet_data': pet_data,
+        relationships = db_interface.get_all_relationships()
+        pet_data = {(p.name, p.mood.name.lower(), icons[p.name]) for p in pets}
+        relationships = {(r[0], r[1], r[2].name.lower(), ) for r in relationships}
+        return render(request, "manage_pets/view_relationships.html", {'pet_data': pet_data,
                                                                    'relationships': relationships, })
 
 
 def view_data_usage(request):
-    pets = list(PetData.objects.iterator())
-    scanner = NetworkScanner(_MONITOR_SETTINGS)
-    tplink_scraper = scanner.tplink_scraper
-    history_start_time = time.time() - _MONITOR_SETTINGS.plot_data_window_sec
-    
-    if tplink_scraper is None:
-        return HttpResponseServerError('<h1>Bandwidth Usage Not Available. Add Router Info to Settings.</h1>')
+    with DBInterface() as db_interface:
+        pets = db_interface.get_pet_info()
+        pet_names = tuple(p.name for p in pets)
+        device_types = {p.name: p.device_type.name for p in pets}
+        pet_interfaces = db_interface.get_network_info_for_pets(pets)
 
-    mapped_pets = scanner.map_pets_to_devices(scanner.get_discovered_devices(), pets)
-    mac_addresses = [m.mac for m in mapped_pets.values() if m.mac is not None]
-    traffic_stats = tplink_scraper.load_mean_bps(mac_addresses, since_timestamp=history_start_time)
-    device_types = {p.name:p.device_type for p in pets}
+        history_start_time = get_cutoff_timestamp(_MONITOR_SETTINGS.plot_data_window_sec)
+        traffic_bps = db_interface.load_bps(pet_names, history_start_time)
+        if len(traffic_bps) == 0:
+            return HttpResponseServerError('<h1>Bandwidth Usage Not Available. Add Service to Collect Data.</h1>')
 
-    pet_data = []
+        traffic_stats = db_interface.get_mean_traffic(traffic_bps, True)
 
-    max_bytes = 1
-    for name, info in mapped_pets.items():
-        if info.mac is not None and info.mac in traffic_stats:
-            max_bytes = max(max_bytes, traffic_stats[info.mac].rx_bytes, traffic_stats[info.mac].tx_bytes)
+        pet_data = []
 
-    for name, info in mapped_pets.items():
-        available =  info.mac in traffic_stats
-        rx_bytes = 0
-        tx_bytes = 0
-        if info.mac is not None and available:
-            rx_bytes = int(traffic_stats[info.mac].rx_bytes)
-            tx_bytes = int(traffic_stats[info.mac].tx_bytes)
-        larger_byte_val = max(rx_bytes, tx_bytes)
-        max_bytes = max(max_bytes, larger_byte_val)
-        pet_data.append((
-            name,
-            available,
-            sizeof_fmt(rx_bytes),
-            sizeof_fmt(tx_bytes),
-            larger_byte_val / max_bytes * 100.0,
-            get_pet_avatar(_STATIC_PATH, device_types[name], name, info.mac).name  
-        ))
-    pet_data = sorted(pet_data, key=lambda x: x[4], reverse=True)
+        max_bytes = 1
+        for traffic in traffic_stats.values():
+            max_bytes = max(max_bytes, traffic.rx_bytes, traffic.tx_bytes)
 
-    return render(request, "manage_pets/view_data_usage.html", {'pet_data': pet_data})
+        for name, info in traffic_stats.items():
+            available = info.rx_bytes > 0 or info.tx_bytes > 0
+            larger_byte_val = max(info.rx_bytes, info.tx_bytes)
+            max_bytes = max(max_bytes, larger_byte_val)
+            pet_data.append((
+                name,
+                available,
+                sizeof_fmt(info.rx_bytes),
+                sizeof_fmt(info.tx_bytes),
+                larger_byte_val / max_bytes * 100.0,
+                get_pet_avatar(_STATIC_PATH, device_types[name], name, pet_interfaces[name].mac).name
+            ))
+        pet_data = sorted(pet_data, key=lambda x: x[4], reverse=True)
+
+        return render(request, "manage_pets/view_data_usage.html", {'pet_data': pet_data})
 
 
 @csrf_exempt
 def view_pet(request, name):
-    matching_objects = PetData.objects.filter(name__exact=name)
-    if len(matching_objects) == 0:
-        return HttpResponseNotFound(f'<h1>Pet "{name}" Not Found</h1>')
-    else:
-        pinger = Pinger(_MONITOR_SETTINGS.pinger_settings)
-        pet_ai = PetAi(_MONITOR_SETTINGS.pet_ai_settings)
-        pet_data = matching_objects[0]
-        scanner = NetworkScanner(_MONITOR_SETTINGS)
-        tplink_scraper = scanner.tplink_scraper
-        mapped_pets = scanner.map_pets_to_devices(scanner.get_discovered_devices(), [pet_data])
-        device_data = mapped_pets[name]
-        avatar_path = get_pet_avatar(_STATIC_PATH, pet_data.device_type, name, device_data.mac)
-        history_start_time = time.time() - _MONITOR_SETTINGS.plot_data_window_sec
-        if tplink_scraper is None or device_data.mac is None:
-            tp_link_traffic_info = TrafficStats(0, 0, 0, 0, 0)
-            traffic_data_webp = None
+    with DBInterface() as db_interface:
+        pet = db_interface.get_specific_pet(name)
+        if pet is None:
+            return HttpResponseNotFound(f'<h1>Pet "{name}" Not Found</h1>')
         else:
-            tp_link_traffic_info = tplink_scraper.load_mean_bps([device_data.mac]).get(
-                device_data.mac, TrafficStats(0, 0, 0, 0, 0))
-            traffic_data_webp = base64.b64encode(tplink_scraper.generate_traffic_plot(
-                device_data.mac, since_timestamp=history_start_time)).decode('utf-8')
-        mean_uptime = pinger.load_availability_mean([pet_data.name],
-                                                    since_timestamp=history_start_time).get(pet_data.name)
-        relationships = pet_ai.get_relationships([pet_data.name]).get_relationships(pet_data.name)
-        relationships = {n: m.name for n, m in relationships.items()}
-        mood = pet_ai.get_moods([pet_data.name])[pet_data.name]
-        up_time_webp = base64.b64encode(
-            pinger.generate_uptime_plot(
-                pet_data.name,
-                since_timestamp=history_start_time)).decode('utf-8')
+            mapped_pets = db_interface.get_network_info_for_pets([pet])
+            device_data = mapped_pets[name]
+            avatar_path = get_pet_avatar(_STATIC_PATH, pet.device_type.name, name, device_data.mac)
+            history_start_time = get_cutoff_timestamp(_MONITOR_SETTINGS.plot_data_window_sec)
+            traffic_df = db_interface.load_bps([pet.name], history_start_time)
+            if len(traffic_df[name]) > 0:
+                traffic_info = db_interface.get_mean_traffic(traffic_df)[name]
+                traffic_data_webp = base64.b64encode(db_interface.generate_traffic_plot(traffic_df[name])).decode('utf-8')
+            else:
+                traffic_data_webp = None
+                traffic_info = TrafficStats()
 
-        if pet_data.description is not None:
-            substitute_ip = 'IP_UNKNOWN' if device_data.ip is None else device_data.ip
-            description = pet_data.description.replace('{IP}', substitute_ip)
-        else:
-            description = None
+            mean_uptime = db_interface.load_availability_mean([pet.name],
+                                                            since_timestamp=history_start_time).get(pet.name)
+            relationships = db_interface.get_relationship_map([pet.name]).get_relationships(pet.name)
+            relationships = {n: m.name for n, m in relationships.items()}
+            up_time_webp = base64.b64encode(
+                db_interface.generate_uptime_plot(
+                    pet.name,
+                    since_timestamp=history_start_time)).decode('utf-8')
 
-        return render(request, "manage_pets/view_pet.html", {'pet_data': pet_data,
-                                                             'description': description,
-                                                             'device_info': device_data,
-                                                             'mood': mood.name,
-                                                             'relationships': relationships,
-                                                             'traffic_info': tp_link_traffic_info,
-                                                             'traffic_data_webp': traffic_data_webp,
-                                                             'mean_uptime': mean_uptime,
-                                                             'up_time_webp': up_time_webp,
-                                                             'avatar_path': avatar_path.name, })
+            if pet.description is not None:
+                substitute_ip = 'IP_UNKNOWN' if device_data.ip is None else device_data.ip
+                description = pet.description.replace('{IP}', substitute_ip)
+            else:
+                description = None
+
+            return render(request, "manage_pets/view_pet.html", {'pet_data': pet,
+                                                                'description': description,
+                                                                'device_info': device_data,
+                                                                'mood': pet.mood.name,
+                                                                'relationships': relationships,
+                                                                'traffic_info': traffic_info,
+                                                                'traffic_data_webp': traffic_data_webp,
+                                                                'mean_uptime': mean_uptime,
+                                                                'up_time_webp': up_time_webp,
+                                                                'avatar_path': avatar_path.name, })
 
 
 @csrf_exempt
 def delete_pet(request, name):
-    matching_objects = PetData.objects.filter(name__exact=name)
-    for pet in matching_objects:
-        pet.delete()
-
-    return redirect('/manage_pets')
+    with DBInterface() as db_interface:
+        db_interface.delete_pet_info(name)
+        return redirect('/manage_pets')
 
 
 def view_history(request, name=''):
@@ -235,15 +233,15 @@ def view_history(request, name=''):
 
 
 def edit_pet(request, name):
-    matching_objects = PetData.objects.filter(name__exact=name)
-    if len(matching_objects) == 0:
-        return HttpResponseNotFound(f'<h1>Pet "{name}" Not Found</h1>')
-    else:
-        pet_data = matching_objects[0]
-        if request.method == "POST":
-            description = request.POST.get('pet-description')
-            pet_data.description = description
-            pet_data.save()
-            return redirect("/view_pet/" + name)
+    with DBInterface() as db_interface:
+        pet = db_interface.get_specific_pet(name)
+        if pet is not None:
+            if request.method == "POST":
+                description = request.POST.get('pet-description')
+                pet._replace(description=description)
+                db_interface.add_pet_info(pet)
+                return redirect("/view_pet/" + name)
+            else:
+                return render(request, "manage_pets/edit_pet.html", {'pet_data': pet})
         else:
-            return render(request, "manage_pets/edit_pet.html", {'pet_data': pet_data})
+            return HttpResponseNotFound(f'<h1>Pet "{name}" Not Found</h1>')

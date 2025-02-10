@@ -5,11 +5,7 @@ from threading import Condition
 from nmap import PortScannerHostDict
 
 from pet_monitor.common import NetworkInterfaceInfo
-from pet_monitor.network_db import (
-    add_network_info,
-    get_db_connection,
-    set_hard_coded_pet_interfaces,
-)
+from pet_monitor.network_db import DBInterface
 from pet_monitor.nmap.nmap_interface import NMAPRunner
 from pet_monitor.service_base import ServiceBase, run_services
 from pet_monitor.settings import NMAPSettings, get_settings
@@ -46,35 +42,35 @@ class NMAPScraper(ServiceBase):
         #                            'status': {'state': 'up',
         #                                       'reason': 'arp-response'}},
         if self.nmap_interface.result is not None:
-            conn = get_db_connection()
-            if 'nmap' in self.nmap_interface.result:
-                _logger.debug(self.nmap_interface.result['nmap'])
+            with DBInterface() as db_interface:
+                if 'nmap' in self.nmap_interface.result:
+                    _logger.debug(self.nmap_interface.result['nmap'])
 
-            if 'scan' in self.nmap_interface.result:
-                scan: PortScannerHostDict = self.nmap_interface.result['scan']  # type: ignore
-                timestamp = int(time.time())
-                for ip, result in scan.items():
-                    mac = None
-                    host_name = None
-                    if 'addresses' in result and 'mac' in result['addresses'] and len(result['addresses']['mac']) > 0:
-                        mac = result['addresses']['mac'].replace(':', '-')
+                if 'scan' in self.nmap_interface.result:
+                    scan: PortScannerHostDict = self.nmap_interface.result['scan']  # type: ignore
+                    timestamp = int(time.time())
+                    for ip, result in scan.items():
+                        mac = None
+                        host_name = None
+                        if 'addresses' in result and 'mac' in result['addresses'] and len(result['addresses']['mac']) > 0:
+                            mac = result['addresses']['mac'].replace(':', '-')
 
-                    if 'hostnames' in result:
-                        host_names = result['hostnames']
-                        if len(host_names) > 0:
-                            if len(host_names) > 1:
-                                names = [n['name'] for n in host_names]
-                                _logger.warning(f'Mutiple host names found for {ip}: {names}')
-                            name = host_names[0]['name']
-                            if len(name) > 0:
-                                host_name = name
+                        if 'hostnames' in result:
+                            host_names = result['hostnames']
+                            if len(host_names) > 0:
+                                if len(host_names) > 1:
+                                    names = [n['name'] for n in host_names]
+                                    _logger.warning(f'Mutiple host names found for {ip}: {names}')
+                                name = host_names[0]['name']
+                                if len(name) > 0:
+                                    host_name = name
 
-                    add_network_info(conn, NetworkInterfaceInfo(
-                        timestamp=timestamp,
-                        ip=ip,
-                        mac=mac,
-                        dns_hostname=host_name
-                    ))
+                        db_interface.add_network_info(NetworkInterfaceInfo(
+                            timestamp=timestamp,
+                            ip=ip,
+                            mac=mac,
+                            dns_hostname=host_name
+                        ))
 
             self.nmap_interface.result = None
 
@@ -94,7 +90,7 @@ def main():
         print("NMAP settings not found.")
         return
 
-    set_hard_coded_pet_interfaces(settings.hard_coded_pet_interfaces)
+    DBInterface.set_hard_coded_pet_interfaces(settings.hard_coded_pet_interfaces)
     stop_condition = Condition()
     nmap = NMAPScraper(stop_condition, settings.nmap_settings)
     run_services(stop_condition, [nmap])

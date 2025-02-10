@@ -1,124 +1,113 @@
 import json
 
-from pet_monitor.network_db import (
-    delete_pet_info,
-    get_db_connection,
-    PetInfo,
-    IdentifierType,
+from pet_monitor.common import (
     DeviceType,
-    add_pet_info,
-    get_pet_info,
-    get_network_info,
-    add_network_info,
-    NetworkInterfaceInfo,
-    add_traffic_for_pet,
-    _load_traffic_df,
-    load_bps,
-    get_mean_traffic,
-    TrafficStats,
-    add_pet_availability,
-    load_availability,
-    load_availability_mean,
-    load_current_availability,
-    load_last_seen,
-    get_history_len,
-    update_pet_mood,
+    IdentifierType,
     Mood,
-    get_relationship_map,
-    get_all_relationships,
-    add_relationship,
-    remove_relationship,
+    NetworkInterfaceInfo,
+    PetInfo,
     Relationship,
-    )
+    TrafficStats,
+)
+from pet_monitor.network_db import DBInterface
 
 
 def test_db_init():
-    conn = get_db_connection(":memory:")
+    conn = DBInterface(":memory:")
     assert conn
+
+
+def test_db_enter():
+    with DBInterface(":memory:") as conn:
+        assert conn
 
 
 TEST_PETS = set(PetInfo(f'pet{i}', IdentifierType.MAC, '', DeviceType.GAMES) for i in range(5))
 PET_NAMES = set(p.name for p in TEST_PETS)
 
 def test_add_pet():
-    conn = get_db_connection(":memory:")
-    for pet in TEST_PETS:
-        add_pet_info(conn, pet)
+    conn = DBInterface(":memory:")
 
-    loaded_pets = get_pet_info(conn)
+    assert conn.get_specific_pet('pet1') is None
+
+    for pet in TEST_PETS:
+        conn.add_pet_info(pet)
+
+    loaded_pets = conn.get_pet_info()
 
     assert loaded_pets == TEST_PETS
+    assert conn.get_specific_pet('pet1') in loaded_pets
 
 
 def test_add_duplicate_pet():
-    conn = get_db_connection(":memory:")
+    conn = DBInterface(":memory:")
     test_pet = PetInfo('pet', IdentifierType.MAC, '', DeviceType.GAMES)
-    add_pet_info(conn, test_pet)
+    conn.add_pet_info(test_pet)
     test_pet = PetInfo('pet', IdentifierType.MAC, '', DeviceType.IOT)
-    add_pet_info(conn, test_pet)
-    loaded_pets = get_pet_info(conn)
+    conn.add_pet_info(test_pet)
+    loaded_pets = conn.get_pet_info()
     assert loaded_pets == {test_pet}
 
 
 def test_delete_pet():
-    conn = get_db_connection(":memory:")
+    conn = DBInterface(":memory:")
     for pet in TEST_PETS:
-        add_pet_info(conn, pet)
+        conn.add_pet_info(pet)
 
-    loaded_pets = get_pet_info(conn)
+    loaded_pets = conn.get_pet_info()
     assert any(p.name == 'pet3' for p in loaded_pets)
 
-    delete_pet_info(conn, 'pet3')
-    loaded_pets = get_pet_info(conn)
+    conn.delete_pet_info('pet3')
+    loaded_pets = conn.get_pet_info()
     assert not any(p.name == 'pet3' for p in loaded_pets)
 
-    add_pet_info(conn, PetInfo('pet3', IdentifierType.MAC, '', DeviceType.GAMES))
-    loaded_pets = get_pet_info(conn)
+    conn.add_pet_info(PetInfo('pet3', IdentifierType.MAC, '', DeviceType.GAMES))
+    loaded_pets = conn.get_pet_info()
     assert loaded_pets == TEST_PETS
 
 def test_set_mood():
     NAME = 'pet1'
-    conn = get_db_connection(":memory:")
+    conn = DBInterface(":memory:")
 
-    add_pet_info(conn, PetInfo(NAME, IdentifierType.MAC, '', DeviceType.GAMES, mood=Mood.JOLLY))
-    assert next(iter(get_pet_info(conn))).mood == Mood.JOLLY
-    update_pet_mood(conn, NAME, Mood.SHY)
-    assert next(iter(get_pet_info(conn))).mood == Mood.SHY
+    conn.add_pet_info(PetInfo(NAME, IdentifierType.MAC, '', DeviceType.GAMES, mood=Mood.JOLLY))
+    assert next(iter(conn.get_pet_info())).mood == Mood.JOLLY
+    conn.update_pet_mood(NAME, Mood.SHY)
+    assert next(iter(conn.get_pet_info())).mood == Mood.SHY
 
 
 TEST_INTERFACES = set(NetworkInterfaceInfo(mac=f'mac{i}', ip=f'ip{i}', dns_hostname=f'dns{i}', description_json=json.dumps({'a':str(i)})) for i in range(3))
 
 
 def test_add_interface():
-    conn = get_db_connection(":memory:")
+    conn = DBInterface(":memory:")
     for interface in TEST_INTERFACES:
-        add_network_info(conn, interface)
+        conn.add_network_info(interface)
 
-    loaded_interfaces = get_network_info(conn)
+    loaded_interfaces = conn.get_network_info()
     assert loaded_interfaces == TEST_INTERFACES
 
 
 def test_duplicate_interface():
-    conn = get_db_connection(":memory:")
+    conn = DBInterface(":memory:")
     for interface in TEST_INTERFACES:
-        add_network_info(conn, interface)
+        conn.add_network_info(interface)
 
-    add_network_info(conn, interface)
+    conn.add_network_info(interface)
 
-    loaded_interfaces = get_network_info(conn)
+    loaded_interfaces = conn.get_network_info()
     assert loaded_interfaces == TEST_INTERFACES
 
 
 def test_overlapped_interface():
-    conn = get_db_connection(":memory:")
+    conn = DBInterface(":memory:")
     for interface in TEST_INTERFACES:
-        add_network_info(conn, interface)
+        conn.add_network_info(interface)
 
     overlapped_interface = NetworkInterfaceInfo(mac='mac0', ip='ip1', dns_hostname='dns2', description_json='{"b": "3"}')
 
-    add_network_info(conn, overlapped_interface)
+    conn.add_network_info(overlapped_interface)
 
-    loaded_interfaces = get_network_info(conn)
+    loaded_interfaces = conn.get_network_info()
 
     EXPECTED_INTERFACES = {
         NetworkInterfaceInfo(mac='mac0', ip='ip1', dns_hostname='dns2', description_json='{"a": "2", "b": "3"}'),
@@ -130,19 +119,19 @@ def test_overlapped_interface():
 
 
 def test_delete_overlapped_interface():
-    conn = get_db_connection(":memory:")
+    conn = DBInterface(":memory:")
     TEST_INTERFACES2 = {
         NetworkInterfaceInfo(mac='mac0', description_json='{"a": "0"}'),
         NetworkInterfaceInfo(ip='ip1', description_json='{"a": "1"}'),
     }
     for interface in TEST_INTERFACES2:
-        add_network_info(conn, interface)
+        conn.add_network_info(interface)
 
     overlapped_interface = NetworkInterfaceInfo(mac='mac0', ip='ip1', dns_hostname='dns2', description_json='{"b": "3"}')
 
-    add_network_info(conn, overlapped_interface)
+    conn.add_network_info(overlapped_interface)
 
-    loaded_interfaces = get_network_info(conn)
+    loaded_interfaces = conn.get_network_info()
 
     EXPECTED_INTERFACES = {
         NetworkInterfaceInfo(mac='mac0', ip='ip1', dns_hostname='dns2', description_json='{"a": "0", "b": "3"}'),
@@ -152,123 +141,123 @@ def test_delete_overlapped_interface():
 
 
 def test_insert_invalid_pet_stats():
-    conn = get_db_connection(":memory:")
+    conn = DBInterface(":memory:")
     NAME = 'pet1'
     
-    add_traffic_for_pet(conn, NAME, 0, 0, 0)
+    conn.add_traffic_for_pet(NAME, 0, 0, 0)
 
-    traffic_df = _load_traffic_df(conn, PET_NAMES, 0)
+    traffic_df = conn._load_traffic_df(PET_NAMES, 0)
 
     assert len(traffic_df) == 0
 
 
 def test_insert_stats():
-    conn = get_db_connection(":memory:")
+    conn = DBInterface(":memory:")
     NAME = 'pet1'
 
-    bps_df = load_bps(conn, PET_NAMES, 0)
+    bps_df = conn.load_bps(PET_NAMES, 0)
     assert len(bps_df) == len(PET_NAMES)
     assert len(bps_df[NAME]) == 0
-    mean_stats = get_mean_traffic(bps_df)
+    mean_stats = conn.get_mean_traffic(bps_df)
     assert len(mean_stats) == len(PET_NAMES)
     assert mean_stats[NAME] == TrafficStats() 
 
     for pet in TEST_PETS:
-        add_pet_info(conn, pet)
+        conn.add_pet_info(pet)
 
-    add_traffic_for_pet(conn, NAME, 0, 0, 0)
-    bps_df = load_bps(conn, PET_NAMES, 0)
+    conn.add_traffic_for_pet(NAME, 0, 0, 0)
+    bps_df = conn.load_bps(PET_NAMES, 0)
     assert len(bps_df) == len(PET_NAMES)
     assert len(bps_df[NAME]) == 1
-    mean_stats = get_mean_traffic(bps_df)
+    mean_stats = conn.get_mean_traffic(bps_df)
     assert len(mean_stats) == len(PET_NAMES)
     assert mean_stats[NAME] == TrafficStats()
 
-    add_traffic_for_pet(conn, NAME, 100, 200, 1)
-    traffic_df = _load_traffic_df(conn, PET_NAMES, 0)
+    conn.add_traffic_for_pet(NAME, 100, 200, 1)
+    traffic_df = conn._load_traffic_df(PET_NAMES, 0)
     assert len(traffic_df) == 2
     assert len(traffic_df[traffic_df['name'] == NAME]) == 2
     assert traffic_df.iloc[1].tx_bytes == 200
 
-    bps_df = load_bps(conn, PET_NAMES, 0)
+    bps_df = conn.load_bps(PET_NAMES, 0)
     assert len(bps_df) == len(PET_NAMES)
     assert len(bps_df[NAME]) == 2
     assert bps_df[NAME].iloc[1].rx_bytes_bps == 100.0
-    mean_stats = get_mean_traffic(bps_df)
+    mean_stats = conn.get_mean_traffic(bps_df)
     assert len(mean_stats) == len(PET_NAMES)
     assert mean_stats[NAME] == TrafficStats(100, 200, 1, 100, 200)
 
 
 def test_insert_invalid_availability():
-    conn = get_db_connection(":memory:")
+    conn = DBInterface(":memory:")
 
-    availability = load_availability(conn, PET_NAMES)
+    availability = conn.load_availability(PET_NAMES)
     assert len(availability) == 0
 
-    availability_mean = load_availability_mean(conn, PET_NAMES)
+    availability_mean = conn.load_availability_mean(PET_NAMES)
     assert availability_mean == {n: 0.0 for n in PET_NAMES}
 
-    current_availability = load_current_availability(conn, PET_NAMES)
+    current_availability = conn.load_current_availability(PET_NAMES)
     assert current_availability == {n: False for n in PET_NAMES}
 
-    last_seen = load_last_seen(conn, PET_NAMES)
+    last_seen = conn.load_last_seen(PET_NAMES)
     assert last_seen == {n: 0 for n in PET_NAMES}
 
-    history_lens = get_history_len(conn, PET_NAMES)
+    history_lens = conn.get_history_len(PET_NAMES)
     assert history_lens == {n: 0 for n in PET_NAMES}
 
 
 def test_availability():
-    conn = get_db_connection(":memory:")
+    conn = DBInterface(":memory:")
     NAME = 'pet1'
 
     for pet in TEST_PETS:
-        add_pet_info(conn, pet)
+        conn.add_pet_info(pet)
 
-    add_pet_availability(conn, NAME, False, 1)
-    add_pet_availability(conn, NAME, True, 2)
+    conn.add_pet_availability(NAME, False, 1)
+    conn.add_pet_availability(NAME, True, 2)
 
-    availability = load_availability(conn, PET_NAMES)
+    availability = conn.load_availability(PET_NAMES)
     assert len(availability) == 2
 
-    availability_mean = load_availability_mean(conn, PET_NAMES)
+    availability_mean = conn.load_availability_mean(PET_NAMES)
     EXPECTED = {n: 0.0 for n in PET_NAMES}
     EXPECTED[NAME] = 50.
     assert availability_mean == EXPECTED
 
-    current_availability = load_current_availability(conn, PET_NAMES)
+    current_availability = conn.load_current_availability(PET_NAMES)
     EXPECTED = {n: False for n in PET_NAMES}
     EXPECTED[NAME] = True
     assert current_availability == EXPECTED
 
-    last_seen = load_last_seen(conn, PET_NAMES)
+    last_seen = conn.load_last_seen(PET_NAMES)
     EXPECTED = {n: 0 for n in PET_NAMES}
     EXPECTED[NAME] = 2
     assert last_seen == EXPECTED
 
-    history_lens = get_history_len(conn, PET_NAMES)
+    history_lens = conn.get_history_len(PET_NAMES)
     EXPECTED = {n: 0 for n in PET_NAMES}
     EXPECTED[NAME] = 1
     assert history_lens == EXPECTED
 
 
 def test_relationships():
-    conn = get_db_connection(":memory:")
+    conn = DBInterface(":memory:")
     NAMES = ('pet1', 'pet2', 'pet3', 'pet4')
 
     for pet in TEST_PETS:
-        add_pet_info(conn, pet)
+        conn.add_pet_info(pet)
 
-    add_relationship(conn, NAMES[0], NAMES[1], Relationship.FRIENDS)
-    add_relationship(conn, NAMES[0], NAMES[2], Relationship.FRIENDS)
+    conn.add_relationship(NAMES[0], NAMES[1], Relationship.FRIENDS)
+    conn.add_relationship(NAMES[0], NAMES[2], Relationship.FRIENDS)
 
-    relationships = get_all_relationships(conn)
+    relationships = conn.get_all_relationships()
     assert relationships == {
         (NAMES[0], NAMES[1], Relationship.FRIENDS),
         (NAMES[0], NAMES[2], Relationship.FRIENDS),
     }
 
-    relationship_map = get_relationship_map(conn, PET_NAMES)
+    relationship_map = conn.get_relationship_map(PET_NAMES)
 
     assert relationship_map.get_relationship(NAMES[2], NAMES[0]) == Relationship.FRIENDS
     assert relationship_map.get_relationship(NAMES[0], NAMES[3]) is None
@@ -280,10 +269,10 @@ def test_relationships():
         NAMES[0]: Relationship.FRIENDS,
     }
 
-    remove_relationship(conn, NAMES[1], NAMES[0])
+    conn.remove_relationship(NAMES[1], NAMES[0])
     relationship_map.remove(NAMES[1], NAMES[0])
 
-    relationships = get_all_relationships(conn)
+    relationships = conn.get_all_relationships()
     assert relationships == {
         (NAMES[0], NAMES[2], Relationship.FRIENDS),
     }

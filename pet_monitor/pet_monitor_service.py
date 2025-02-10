@@ -5,7 +5,7 @@ import logging
 from threading import Condition
 
 from pet_monitor.common import (CONSOLE_LOG_FILE, LoggingTimeFilter)
-from pet_monitor.network_db import set_hard_coded_pet_interfaces
+from pet_monitor.network_db import DBInterface
 from pet_monitor.service_base import ServiceBase, run_services
 from pet_monitor.pet_ai import PetAi
 from pet_monitor.ping import Pinger
@@ -32,21 +32,21 @@ def main():
     logger_group.setLevel(logging.DEBUG)
 
     settings = get_settings()
-    set_hard_coded_pet_interfaces(settings.hard_coded_pet_interfaces)
+    DBInterface.set_hard_coded_pet_interfaces(settings.hard_coded_pet_interfaces)
 
     stop_condition = Condition()
     services: list[ServiceBase] = []
     
-    if settings.tplink_settings:
+    if settings.tplink_settings is not None:
         services.append(TPLinkScraper(stop_condition, settings.tplink_settings))
         
-    if settings.nmap_settings:
+    if settings.nmap_settings is not None:
         services.append(NMAPScraper(stop_condition, settings.nmap_settings))
 
-    if settings.pinger_settings:
+    if settings.pinger_settings is not None:
         services.append(Pinger(stop_condition, settings.pinger_settings))
 
-    if settings.pet_ai_settings:
+    if settings.pet_ai_settings is not None:
         services.append(PetAi(stop_condition, settings.pet_ai_settings))
 
     run_services(stop_condition, services)

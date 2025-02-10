@@ -118,6 +118,19 @@ class NetworkInterfaceInfo(NamedTuple):
 
     def get_description(self) -> dict[str, str]:
         return json.loads(self.description_json)
+    
+    def get_name(self) -> Optional[str]:
+        description = self.get_description()
+        if 'dhcp_name' in description:
+            return description['dhcp_name']
+        elif self.dns_hostname:
+            return self.dns_hostname
+        else:
+            return None
+        
+    def get_description_str(self) -> Optional[str]:
+        description = self.get_description()
+        return description.get('router_description')
 
     def replace_description(self, description: dict[str, str]) -> 'NetworkInterfaceInfo':
         return self._replace(description_json=json.dumps(description, sort_keys=True))
