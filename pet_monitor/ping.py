@@ -5,7 +5,7 @@ from typing import Generator, Iterable
 from icmplib import ping
 
 from pet_monitor.network_db import DBInterface
-from pet_monitor.service_base import Condition, ServiceBase, run_services
+from pet_monitor.service_base import ServiceBase
 from pet_monitor.settings import PingerSettings, get_settings
 
 _logger = logging.getLogger(__name__)
@@ -35,17 +35,17 @@ def _ping_in_parallel(hosts: Iterable[tuple[str, str]]) -> Generator[tuple[str, 
 
 
 class Pinger(ServiceBase):
-    def __init__(self, stop_condition: Condition, settings: PingerSettings) -> None:
-        super().__init__(settings.update_period_sec, stop_condition)
+    def __init__(self, settings: PingerSettings) -> None:
+        super().__init__(settings.update_period_sec)
         self.settings = settings
 
     def _update(self) -> None:
-        with DBInterface() as db_interface:
-            # Clear old data.
-            db_interface.delete_old_availablity(int(self.settings.history_len))
+            with DBInterface() as db_interface:
+                # Clear old data.
+                db_interface.delete_old_availablity(int(self.settings.history_len))
 
-            pet_info = db_interface.get_pet_info()
-            pet_device_map = db_interface.get_network_info_for_pets(pet_info)
+                pet_info = db_interface.get_pet_info()
+                pet_device_map = db_interface.get_network_info_for_pets(pet_info)
 
             hosts = set()
             for name, device in pet_device_map.items():
@@ -56,7 +56,8 @@ class Pinger(ServiceBase):
 
             # Ideally, don't block on this. Leaving the scope waits for all threads to finish.
             for name, is_online in _ping_in_parallel(hosts):
-                db_interface.add_pet_availability(name, is_online)
+                with DBInterface() as db_interface:
+                    db_interface.add_pet_availability(name, is_online)
 
 
 def main():
@@ -68,9 +69,8 @@ def main():
         return
 
     DBInterface.set_hard_coded_pet_interfaces(settings.hard_coded_pet_interfaces)
-    stop_condition = Condition()
-    pinger = Pinger(stop_condition, settings.pinger_settings)
-    run_services(stop_condition, [pinger])
+    pinger = Pinger(settings.pinger_settings)
+    ServiceBase.run_services([pinger])
 
 
 if __name__ == '__main__':

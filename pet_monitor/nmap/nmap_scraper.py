@@ -1,21 +1,20 @@
 import logging
 import time
-from threading import Condition
 
 from nmap import PortScannerHostDict
 
 from pet_monitor.common import NetworkInterfaceInfo
 from pet_monitor.network_db import DBInterface
 from pet_monitor.nmap.nmap_interface import NMAPRunner
-from pet_monitor.service_base import ServiceBase, run_services
+from pet_monitor.service_base import ServiceBase
 from pet_monitor.settings import NMAPSettings, get_settings
 
 _logger = logging.getLogger(__name__)
 
 
 class NMAPScraper(ServiceBase):
-    def __init__(self, stop_condition: Condition, settings: NMAPSettings) -> None:
-        super().__init__(settings.time_between_scans, stop_condition)
+    def __init__(self, settings: NMAPSettings) -> None:
+        super().__init__(settings.time_between_scans)
         self.settings = settings
         self.nmap_interface = NMAPRunner(settings)
 
@@ -91,9 +90,8 @@ def main():
         return
 
     DBInterface.set_hard_coded_pet_interfaces(settings.hard_coded_pet_interfaces)
-    stop_condition = Condition()
-    nmap = NMAPScraper(stop_condition, settings.nmap_settings)
-    run_services(stop_condition, [nmap])
+    nmap = NMAPScraper(settings.nmap_settings)
+    ServiceBase.run_services([nmap])
 
 
 if __name__ == '__main__':

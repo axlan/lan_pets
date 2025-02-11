@@ -39,8 +39,8 @@ def _get_mood(stats: MoodAttributes, settings: PetAISettings) -> Mood:
 
 
 class PetAi(ServiceBase):
-    def __init__(self, stop_condition: Condition, settings: PetAISettings) -> None:
-        super().__init__(settings.update_period_sec, stop_condition)
+    def __init__(self, settings: PetAISettings) -> None:
+        super().__init__(settings.update_period_sec)
         self.settings = settings
 
     def _update(self) -> None:

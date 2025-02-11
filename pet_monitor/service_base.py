@@ -24,10 +24,11 @@ class RateLimiter:
 
 
 class ServiceBase:
-    def __init__(self, update_period_sec: float, stop_condition: Condition) -> None:
+    error_condition = Condition()
+
+    def __init__(self, update_period_sec: float) -> None:
         self._rate_limiter = RateLimiter(update_period_sec)
         self.is_running = False
-        self.stop_condition = stop_condition
         self.thread: Optional[Thread] = None
 
     def run(self) -> None:
@@ -46,8 +47,8 @@ class ServiceBase:
                     self._update()
             except Exception:
                 _logger.error('Unhandled Exception:', exc_info=True)
-            with self.stop_condition:
-                self.stop_condition.notify()
+            with self.error_condition:
+                self.error_condition.notify()
 
     def _check(self) -> None:
         pass
@@ -60,16 +61,16 @@ class ServiceBase:
             self.is_running = False
             self.thread.join()
 
+    @classmethod
+    def run_services(cls, services: list['ServiceBase']):
+        try:
+            with cls.error_condition:
+                for service in services:
+                    service.run()
+                cls.error_condition.wait()
+        except KeyboardInterrupt:
+            pass
 
-def run_services(stop_condition: Condition, services: list[ServiceBase]):
-    try:
-        with stop_condition:
-            for service in services:
-                service.run()
-            stop_condition.wait()
-    except KeyboardInterrupt:
-        pass
-
-    _logger.info('Stopping services.')
-    for service in services:
-        service.stop()
+        _logger.info('Stopping services.')
+        for service in services:
+            service.stop()

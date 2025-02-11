@@ -4,7 +4,7 @@ import urllib.parse
 
 from pet_monitor.common import NetworkInterfaceInfo
 from pet_monitor.network_db import DBInterface
-from pet_monitor.service_base import Condition, ServiceBase, run_services
+from pet_monitor.service_base import ServiceBase
 from pet_monitor.settings import TPLinkSettings, get_settings
 from pet_monitor.tplink_scraper.tplink_interface import TPLinkInterface
 
@@ -12,23 +12,23 @@ _logger = logging.getLogger(__name__)
 
 
 class TPLinkScraper(ServiceBase):
-    def __init__(self, stop_condition: Condition, settings: TPLinkSettings) -> None:
-        super().__init__(settings.update_period_sec, stop_condition)
+    def __init__(self, settings: TPLinkSettings) -> None:
+        super().__init__(settings.update_period_sec)
         self.settings = settings
 
     def _update(self) -> bool:
+        try:
+            tplink = TPLinkInterface(
+                self.settings.router_ip, self.settings.username, self.settings.password)
+            clients = tplink.get_dhcp_clients()
+            reservations = tplink.get_dhcp_static_reservations()
+            traffic = tplink.get_traffic_stats()
+        except Exception as e:
+            _logger.error(e)
+            return False
+
         with DBInterface() as db_interface:
             db_interface.delete_old_traffic_stats(self.settings.update_period_sec)
-
-            try:
-                tplink = TPLinkInterface(
-                    self.settings.router_ip, self.settings.username, self.settings.password)
-                clients = tplink.get_dhcp_clients()
-                reservations = tplink.get_dhcp_static_reservations()
-                traffic = tplink.get_traffic_stats()
-            except Exception as e:
-                _logger.error(e)
-                return False
 
             timestamp = int(time.time())
             devices: dict[str, NetworkInterfaceInfo] = {}
@@ -80,9 +80,8 @@ def main():
         return
 
     DBInterface.set_hard_coded_pet_interfaces(settings.hard_coded_pet_interfaces)
-    stop_condition = Condition()
-    tplink = TPLinkScraper(stop_condition, settings.tplink_settings)
-    run_services(stop_condition, [tplink])
+    tplink = TPLinkScraper(settings.tplink_settings)
+    ServiceBase.run_services([tplink])
 
 
 if __name__ == '__main__':
