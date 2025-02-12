@@ -1,6 +1,5 @@
 
 from enum import IntEnum
-import json
 import logging
 import time
 from pathlib import Path
@@ -89,6 +88,11 @@ class Mood(IntEnum):
     SHY = 8
 
 
+class ExtraNetworkInfoType(IntEnum):
+    DHCP_NAME = 1
+    ROUTER_DESCRIPTION = 2
+
+
 class Relationship(IntEnum):
     FRIENDS = 1
 
@@ -114,31 +118,6 @@ class NetworkInterfaceInfo(NamedTuple):
     ip: Optional[str] = None
     # Normal DNS hostname
     dns_hostname: Optional[str] = None
-    description_json: str = '{}'
-
-    def get_description(self) -> dict[str, str]:
-        return json.loads(self.description_json)
-    
-    def get_name(self) -> Optional[str]:
-        description = self.get_description()
-        if 'dhcp_name' in description:
-            return description['dhcp_name']
-        elif self.dns_hostname:
-            return self.dns_hostname
-        else:
-            return None
-        
-    def get_description_str(self) -> Optional[str]:
-        description = self.get_description()
-        return description.get('router_description')
-
-    def replace_description(self, description: dict[str, str]) -> 'NetworkInterfaceInfo':
-        return self._replace(description_json=json.dumps(description, sort_keys=True))
-    
-    def replace_description_field(self, name: str, value: str) -> 'NetworkInterfaceInfo':
-        description = self.get_description()
-        description[name] = value
-        return self._replace(description_json=json.dumps(description, sort_keys=True))
 
     def get_timestamp_age_str(self, now_interval=0) -> str:
         return get_timestamp_age_str(self.timestamp, now_interval)
@@ -162,9 +141,7 @@ class NetworkInterfaceInfo(NamedTuple):
                     newer_record, older_record_dict = (
                         (v1, v2._asdict()) if v1.timestamp > v2.timestamp else (
                             v2, v1._asdict()))
-                    new_description = json.loads(older_record_dict['description_json'])
-                    new_description.update(newer_record.get_description())
-                    missing = {'description_json': json.dumps(new_description, sort_keys=True)}
+                    missing = {}
                     for k, v in newer_record._asdict().items():
                         if v is None:
                             missing[k] = older_record_dict[k]

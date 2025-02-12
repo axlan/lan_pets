@@ -8,6 +8,7 @@ from pet_monitor.common import (
     PetInfo,
     Relationship,
     TrafficStats,
+    ExtraNetworkInfoType
 )
 from pet_monitor.network_db import DBInterface
 
@@ -75,8 +76,9 @@ def test_set_mood():
     assert next(iter(conn.get_pet_info())).mood == Mood.SHY
 
 
-TEST_INTERFACES = set(NetworkInterfaceInfo(mac=f'mac{i}', ip=f'ip{i}', dns_hostname=f'dns{i}', description_json=json.dumps({'a':str(i)})) for i in range(3))
-
+TEST_INTERFACES = tuple((NetworkInterfaceInfo(mac=f'mac{i}', ip=f'ip{i}', dns_hostname=f'dns{i}')) for i in range(3))
+TEST_EXTRA_INFO = tuple({ExtraNetworkInfoType.DHCP_NAME: f'pet{i}'} for i in range(3))
+TEST_INTERFACE_INFO = tuple((i, e) for i,e in zip(TEST_INTERFACES, TEST_EXTRA_INFO))
 
 def test_add_interface():
     conn = DBInterface(":memory:")
@@ -84,57 +86,75 @@ def test_add_interface():
         conn.add_network_info(interface)
 
     loaded_interfaces = conn.get_network_info()
-    assert loaded_interfaces == TEST_INTERFACES
+    assert loaded_interfaces == set(TEST_INTERFACES)
+
+
+def test_extra_info_interface():
+    conn = DBInterface(":memory:")
+    for interface in TEST_INTERFACE_INFO:
+        conn.add_network_info(*interface)
+
+    for interface, extra_info in TEST_INTERFACE_INFO:
+        loaded_info = conn.get_extra_network_info(interface)
+        assert extra_info == loaded_info
 
 
 def test_duplicate_interface():
     conn = DBInterface(":memory:")
-    for interface in TEST_INTERFACES:
-        conn.add_network_info(interface)
+    for interface in TEST_INTERFACE_INFO:
+        conn.add_network_info(*interface)
 
-    conn.add_network_info(interface)
+    conn.add_network_info(interface[0])
 
     loaded_interfaces = conn.get_network_info()
-    assert loaded_interfaces == TEST_INTERFACES
+    assert loaded_interfaces == set(TEST_INTERFACES)
+    assert conn.get_extra_network_info(interface[0]) == interface[1]
 
 
 def test_overlapped_interface():
     conn = DBInterface(":memory:")
-    for interface in TEST_INTERFACES:
-        conn.add_network_info(interface)
+    for interface in TEST_INTERFACE_INFO:
+        conn.add_network_info(*interface)
 
-    overlapped_interface = NetworkInterfaceInfo(mac='mac0', ip='ip1', dns_hostname='dns2', description_json='{"b": "3"}')
+    overlapped_extra_info = {ExtraNetworkInfoType.ROUTER_DESCRIPTION: "test2"}
+    overlapped_interface = NetworkInterfaceInfo(mac='mac0', ip='ip1', dns_hostname='dns2')
 
-    conn.add_network_info(overlapped_interface)
+    conn.add_network_info(overlapped_interface, overlapped_extra_info)
 
     loaded_interfaces = conn.get_network_info()
 
     EXPECTED_INTERFACES = {
-        NetworkInterfaceInfo(mac='mac0', ip='ip1', dns_hostname='dns2', description_json='{"a": "2", "b": "3"}'),
-        NetworkInterfaceInfo(ip='ip0', dns_hostname='dns0', description_json='{"a": "0"}'),
-        NetworkInterfaceInfo(mac='mac1', dns_hostname='dns1', description_json='{"a": "1"}'),
+        NetworkInterfaceInfo(mac='mac0', ip='ip1', dns_hostname='dns2'),
+        NetworkInterfaceInfo(ip='ip0', dns_hostname='dns0'),
+        NetworkInterfaceInfo(mac='mac1', dns_hostname='dns1'),
     }
 
     assert loaded_interfaces == EXPECTED_INTERFACES
+
+    EXPECTED_EXTRA_INFO = {**TEST_EXTRA_INFO[2], **overlapped_extra_info}
+
+    info = conn.get_extra_network_info(NetworkInterfaceInfo(mac='mac0'))
+
+    assert info == EXPECTED_EXTRA_INFO
 
 
 def test_delete_overlapped_interface():
     conn = DBInterface(":memory:")
     TEST_INTERFACES2 = {
-        NetworkInterfaceInfo(mac='mac0', description_json='{"a": "0"}'),
-        NetworkInterfaceInfo(ip='ip1', description_json='{"a": "1"}'),
+        NetworkInterfaceInfo(mac='mac0'),
+        NetworkInterfaceInfo(ip='ip1'),
     }
     for interface in TEST_INTERFACES2:
         conn.add_network_info(interface)
 
-    overlapped_interface = NetworkInterfaceInfo(mac='mac0', ip='ip1', dns_hostname='dns2', description_json='{"b": "3"}')
+    overlapped_interface = NetworkInterfaceInfo(mac='mac0', ip='ip1', dns_hostname='dns2')
 
     conn.add_network_info(overlapped_interface)
 
     loaded_interfaces = conn.get_network_info()
 
     EXPECTED_INTERFACES = {
-        NetworkInterfaceInfo(mac='mac0', ip='ip1', dns_hostname='dns2', description_json='{"a": "0", "b": "3"}'),
+        NetworkInterfaceInfo(mac='mac0', ip='ip1', dns_hostname='dns2'),
     }
 
     assert loaded_interfaces == EXPECTED_INTERFACES

@@ -13,7 +13,6 @@ from plotly.subplots import make_subplots
 
 from pet_monitor.common import (
     DATA_DIR,
-    Mood,
     NetworkInterfaceInfo,
     PetInfo,
     Relationship,
@@ -22,6 +21,7 @@ from pet_monitor.common import (
     IdentifierType,
     Mood,
     DeviceType,
+    ExtraNetworkInfoType,
     get_cutoff_timestamp,
     map_pets_to_devices,
 )
@@ -36,13 +36,21 @@ CREATE TABLE IF NOT EXISTS network_info (
     mac VARCHAR(17),               -- MAC address (format: XX-XX-XX-XX-XX-XX)
     ip VARCHAR(15),                         -- IP address (format: IPv4). NULL if not available.
     dns_hostname VARCHAR(255),              -- DNS hostname
-    mdns_hostname VARCHAR(255),             -- mDNS hostname
-    description_json TEXT,                  -- JSON string with additional information about the client
     timestamp INTEGER DEFAULT (strftime('%s', 'now')), -- Unix time last updated
     UNIQUE (mac),                            -- Ensure MAC addresses are unique
     UNIQUE (ip),
     UNIQUE (dns_hostname),
     PRIMARY KEY(row_id)
+);
+'''
+
+EXTRA_NETWORK_INFO = '''\
+CREATE TABLE IF NOT EXISTS extra_network_info (
+    network_id INTEGER NOT NULL,   -- The network interface the info is for
+    type INTEGER,                  -- Type of info
+    info TEXT,
+    UNIQUE (network_id, type),
+    FOREIGN KEY(network_id) REFERENCES network_info(row_id) ON DELETE CASCADE
 );
 '''
 
@@ -115,6 +123,7 @@ class DBInterface:
         conn = sqlite3.connect(db_path, autocommit=True)
         conn.execute("PRAGMA foreign_keys = 1")
         conn.execute(NETWORK_INFO_SCHEMA_SQL)
+        conn.execute(EXTRA_NETWORK_INFO)
         conn.execute(PET_INFO_SCHEMA_SQL)
         conn.execute(TRAFFIC_STATS_SCHEMA_SQL)
         conn.execute(AVAILABILITY_SCHEMA_SQL)
@@ -171,7 +180,34 @@ class DBInterface:
         if cols is not None:
             return  self._replace_pet_enums(PetInfo(*cols))
 
-    def add_network_info(self, new_interface: NetworkInterfaceInfo):
+    @staticmethod
+    def _set_extra_network_info(cur: sqlite3.Cursor, row_id: int, extra_info: dict[ExtraNetworkInfoType, str]):
+        if len(extra_info) == 0:
+            return
+        QUERY = """
+        INSERT INTO extra_network_info(network_id, type, info) VALUES (?, ?, ?)
+            ON CONFLICT(network_id, type) DO UPDATE
+            SET info=?;
+        """
+        cur.executemany(QUERY, ((row_id, k, v, v) for k, v in extra_info.items()))
+
+    def get_extra_network_info(self, interface: NetworkInterfaceInfo) -> dict[ExtraNetworkInfoType, str]:
+        results = {}
+        cur = self.conn.cursor()
+        UNIQUE_PARAMS = ('ip', 'mac', 'dns_hostname')
+        valid_params = tuple(p for p in UNIQUE_PARAMS if interface._asdict()[p])
+        check_vals = ' OR '.join(f'{p}=?' for p in valid_params)
+        QUERY = f"""
+            SELECT extra.type, extra.info
+            FROM network_info
+            INNER JOIN extra_network_info extra
+            WHERE extra.network_id=row_id AND ({check_vals});"""
+        cur.execute(QUERY, tuple(interface._asdict()[p] for p in valid_params))
+        for row in cur.fetchall():
+            results[ExtraNetworkInfoType(row[0])] = row[1]
+        return results
+
+    def add_network_info(self, new_interface: NetworkInterfaceInfo, extra_info: Optional[dict[ExtraNetworkInfoType, str]]=None):
         cur = self.conn.cursor()
         field_str = ','.join(NetworkInterfaceInfo._fields)
         QUERY = f"""
@@ -192,6 +228,7 @@ class DBInterface:
             place_holder_str = ','.join(['?'] * len(NetworkInterfaceInfo._fields))
             QUERY = f"INSERT INTO network_info({field_str}) VALUES ({place_holder_str})"
             cur.execute(QUERY, new_interface)
+            updated_row = cur.lastrowid
         else:
             for row_id, duplicate_params in duplicates.items():
                 if row_id is best_duplicate[0]:
@@ -216,6 +253,9 @@ class DBInterface:
             SET {update_place_holder_str}
             WHERE row_id=?;"""
             cur.execute(QUERY, new_val + (row_id,))
+            updated_row = row_id
+        if updated_row is not None and extra_info is not None:
+            self._set_extra_network_info(cur, updated_row, extra_info)
         self.conn.commit()
 
     def get_network_info(self) -> set[NetworkInterfaceInfo]:

@@ -1,8 +1,9 @@
+from collections import defaultdict
 import logging
 import time
 import urllib.parse
 
-from pet_monitor.common import NetworkInterfaceInfo
+from pet_monitor.common import NetworkInterfaceInfo, ExtraNetworkInfoType
 from pet_monitor.network_db import DBInterface
 from pet_monitor.service_base import ServiceBase
 from pet_monitor.settings import TPLinkSettings, get_settings
@@ -32,31 +33,28 @@ class TPLinkScraper(ServiceBase):
 
             timestamp = int(time.time())
             devices: dict[str, NetworkInterfaceInfo] = {}
+            extra_info = defaultdict(dict)
             for entry in reservations:
                 mac = entry['mac']
                 devices[mac] = NetworkInterfaceInfo(
                     timestamp=timestamp,
                     mac=mac,
                     ip=entry['ip']
-                ).replace_description({
-                    'router_description': urllib.parse.unquote(entry['note'])
-                })
+                )
+                extra_info[mac][ExtraNetworkInfoType.ROUTER_DESCRIPTION] = urllib.parse.unquote(entry['note'])
             for entry in clients:
                 mac = entry['macaddr']
-                if mac in devices:
-                    device = devices[mac]
-                else:
-                    device = NetworkInterfaceInfo(
+                if mac not in devices:
+                    devices[mac] = NetworkInterfaceInfo(
                         timestamp=timestamp,
                         mac=mac,
                         ip=entry['ipaddr'],
                     )
                 if entry['name'] != '--':
-                    device = device.replace_description_field('dhcp_name', entry['name'])
-                devices[mac] = device
+                    extra_info[mac][ExtraNetworkInfoType.DHCP_NAME] = entry['name']
 
-            for device in devices.values():
-                db_interface.add_network_info(device)
+            for mac, device in devices.items():
+                db_interface.add_network_info(device, extra_info=extra_info[mac])
 
             pet_info = db_interface.get_pet_info()
             pet_device_map = db_interface.get_network_info_for_pets(pet_info)

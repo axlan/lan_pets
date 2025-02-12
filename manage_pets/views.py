@@ -17,6 +17,7 @@ from pet_monitor.common import (
     CONSOLE_LOG_FILE,
     DeviceType,
     IdentifierType,
+    ExtraNetworkInfoType,
     PetInfo,
     TrafficStats,
     get_timestamp_age_str,
@@ -83,11 +84,17 @@ def manage_pets(request):
         router_rows = ''
         rows = []
         for device in discovered_devices:
+            extra_info = db_interface.get_extra_network_info(device)
+            device_description = extra_info.get(ExtraNetworkInfoType.ROUTER_DESCRIPTION)
+            device_name = extra_info.get(ExtraNetworkInfoType.DHCP_NAME)
+            if device_name is None:
+                device_name = device.dns_hostname
+
             record = [
-                device.get_name(),
+                device_name,
                 device.get_timestamp_age_str(
                     now_interval=10 * 60),
-                device.get_description_str(),
+                device_description,
                 device.ip,
                 device.mac]
             values = ['"?"' if r is None else f'"{r}"' for r in record]
