@@ -10,6 +10,7 @@ from pet_monitor.service_base import ServiceBase
 from pet_monitor.pet_ai import PetAi
 from pet_monitor.ping import Pinger
 from pet_monitor.nmap.nmap_scraper import NMAPScraper
+from pet_monitor.snmp.snmp_scraper import SNMPScraper
 from pet_monitor.tplink_scraper.scraper import TPLinkScraper
 from pet_monitor.settings import get_settings
 
@@ -41,6 +42,9 @@ def main():
         
     if settings.nmap_settings is not None:
         services.append(NMAPScraper(settings.nmap_settings))
+
+    if settings.snmp_settings is not None:
+        services.append(SNMPScraper(settings.snmp_settings))
 
     if settings.pinger_settings is not None:
         services.append(Pinger(settings.pinger_settings))

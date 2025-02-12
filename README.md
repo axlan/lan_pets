@@ -75,9 +75,7 @@ When it comes to discovering the presence of devices on the network, there are a
 
 # TODO
 
-Add SNMP to router to populate detected devices
-Refactor services to run in seperate threads / make get function fully generic
-Formalize the plugin interface for discovery, availability, bandwidth, or other metrics
+Fix hard coded pets (don't show in UI)
 Add button to do full NMAP scan on device and save result for viewing.
 When pihole 6 is released, add integration into pihole API
 Have option to use NMAP for ping?
