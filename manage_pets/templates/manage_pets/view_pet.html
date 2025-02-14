@@ -164,6 +164,10 @@
         {% for name, relationship in relationships.items %}
           <li><a href="/view_pet/{{name}}">{{name}} - {{relationship}}</a></li>
         {% endfor %}
+        <h2>Services</h2>
+        {% for service in services %}
+        <p>{{service}}</p>
+        {% endfor %}
     </div>
     <h1 style="text-align: center;">Description</h1>
     <div style="border:1px solid black;">

@@ -194,6 +194,14 @@ def view_pet(request, name):
             cpu_stats_webp =_convert_bytes_to_base64(db_interface.generate_cpu_stats_plot(
                     pet.name,
                     since_timestamp=history_start_time))
+            
+            extra_info = db_interface.get_extra_network_info(device_data)
+            if ExtraNetworkInfoType.MDNS_SERVICES in extra_info:
+                services = extra_info[ExtraNetworkInfoType.MDNS_SERVICES].split(',')
+            elif ExtraNetworkInfoType.NMAP_SERVICES in extra_info:
+                services = extra_info[ExtraNetworkInfoType.NMAP_SERVICES].split(',')
+            else:
+                services = None
 
             if pet.description is not None:
                 substitute_ip = 'IP_UNKNOWN' if device_data.ip is None else device_data.ip
@@ -205,6 +213,7 @@ def view_pet(request, name):
                                                                 'description': description,
                                                                 'device_info': device_data,
                                                                 'mood': pet.mood.name,
+                                                                'services': services,
                                                                 'mean_cpu_stats': mean_cpu_stats,
                                                                 'cpu_stats_webp': cpu_stats_webp,
                                                                 'relationships': relationships,
