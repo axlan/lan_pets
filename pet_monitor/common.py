@@ -1,6 +1,8 @@
 
 from enum import IntEnum
 import logging
+import re
+import subprocess
 import time
 from pathlib import Path
 from typing import Any, Iterable, NamedTuple, Optional, TypeVar
@@ -91,6 +93,9 @@ class Mood(IntEnum):
 class ExtraNetworkInfoType(IntEnum):
     DHCP_NAME = 1
     ROUTER_DESCRIPTION = 2
+    MDNS_NAME = 3
+    MDNS_SERVICES = 4
+    NMAP_SERVICES = 5
 
 
 class Relationship(IntEnum):
@@ -118,6 +123,14 @@ class NetworkInterfaceInfo(NamedTuple):
     ip: Optional[str] = None
     # Normal DNS hostname
     dns_hostname: Optional[str] = None
+    mdns_hostname: Optional[str] = None
+
+    def get_host(self) -> Optional[str]:
+        if self.ip is not None:
+            return self.ip 
+        elif self.dns_hostname is not None:
+            return self.dns_hostname
+        return None
 
     def get_timestamp_age_str(self, now_interval=0) -> str:
         return get_timestamp_age_str(self.timestamp, now_interval)
@@ -126,7 +139,8 @@ class NetworkInterfaceInfo(NamedTuple):
         def _match(a: Optional[str], b: Optional[str]) -> bool:
             return a is not None and a == b
         return _match(self.ip, other.ip) or _match(self.mac, other.mac) or _match(
-            self.dns_hostname, other.dns_hostname)
+            self.dns_hostname, other.dns_hostname) or _match(
+            self.mdns_hostname, other.mdns_hostname)
 
     @staticmethod
     def merge(vals1: Iterable['NetworkInterfaceInfo'],
@@ -182,7 +196,8 @@ def map_pets_to_devices(devices: Iterable[NetworkInterfaceInfo],
         }[pet.identifier_type]
         matches[pet.name] = NetworkInterfaceInfo(**{field_name: pet.identifier_value})  # type: ignore
         for device in devices:
-            if getattr(device, field_name) == pet.identifier_value:
+            mdns_match = pet.identifier_type is IdentifierType.HOST and device.mdns_hostname == pet.identifier_value
+            if mdns_match or getattr(device, field_name) == pet.identifier_value:
                 matches[pet.name] = device
                 break
     return matches
@@ -198,6 +213,12 @@ class TrafficStats(NamedTuple):
     timestamp: int = 0
     rx_bytes_bps: float = 0
     tx_bytes_bps: float = 0
+
+
+class CPUStats(NamedTuple):
+    cpu_used_percent: float = 0
+    mem_used_percent: float = 0
+    timestamp: int = 0
 
 
 class RelationshipMap:
@@ -234,3 +255,48 @@ class RelationshipMap:
         if value is not None:
             return value[2]
         return None
+
+
+def standardize_mac_address(mac: str) -> str:
+    # Remove any existing separators
+    mac = mac.replace(":", "").replace("-", "").upper()
+    # Insert dashes every two characters
+    standardized_mac = '-'.join(mac[i:i+2] for i in range(0, len(mac), 2))
+    return standardized_mac
+
+
+def get_mac_for_ip_address(ip_address)->Optional[str]:
+    try:
+        arp_result = subprocess.check_output(["arp", "-a", str(ip_address)])
+        mac_address_search = re.search(r"([0-9a-fA-F]{2}[:-]){5}([0-9a-fA-F]{2})", arp_result.decode())
+        if mac_address_search:
+            return standardize_mac_address(mac_address_search.group(0))
+    except Exception:
+         pass
+    return None
+
+
+def get_device_name(device: NetworkInterfaceInfo, extra_info:dict[ExtraNetworkInfoType, str]) -> Optional[str]:
+    if ExtraNetworkInfoType.DHCP_NAME in extra_info:
+        return extra_info[ExtraNetworkInfoType.DHCP_NAME]
+    elif ExtraNetworkInfoType.MDNS_NAME in extra_info:
+        return extra_info[ExtraNetworkInfoType.MDNS_NAME]
+    elif device.dns_hostname is not None:
+        return device.dns_hostname
+    elif device.mdns_hostname is not None:
+        return device.mdns_hostname
+
+    return None
+
+
+def get_device_summary(extra_info:dict[ExtraNetworkInfoType, str]) -> Optional[str]:
+    if ExtraNetworkInfoType.ROUTER_DESCRIPTION in extra_info:
+        return extra_info[ExtraNetworkInfoType.ROUTER_DESCRIPTION]
+    elif ExtraNetworkInfoType.MDNS_SERVICES in extra_info:
+        return 'Supports: ' + extra_info[ExtraNetworkInfoType.MDNS_SERVICES]
+    elif ExtraNetworkInfoType.NMAP_SERVICES in extra_info:
+        return 'Supports: ' + extra_info[ExtraNetworkInfoType.NMAP_SERVICES]
+
+    return None
+
+TRACE = logging.DEBUG - 1

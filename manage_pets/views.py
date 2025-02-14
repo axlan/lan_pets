@@ -20,6 +20,8 @@ from pet_monitor.common import (
     ExtraNetworkInfoType,
     PetInfo,
     TrafficStats,
+    get_device_name,
+    get_device_summary,
     get_timestamp_age_str,
     map_pets_to_devices,
     sizeof_fmt,
@@ -85,10 +87,8 @@ def manage_pets(request):
         rows = []
         for device in discovered_devices:
             extra_info = db_interface.get_extra_network_info(device)
-            device_description = extra_info.get(ExtraNetworkInfoType.ROUTER_DESCRIPTION)
-            device_name = extra_info.get(ExtraNetworkInfoType.DHCP_NAME)
-            if device_name is None:
-                device_name = device.dns_hostname
+            device_description = get_device_summary(extra_info)
+            device_name = get_device_name(device, extra_info)
 
             record = [
                 device_name,
@@ -158,6 +158,8 @@ def view_data_usage(request):
 
         return render(request, "manage_pets/view_data_usage.html", {'pet_data': pet_data})
 
+def _convert_bytes_to_base64(data: Optional[bytes]) -> Optional[str]:
+    return None if data is None else base64.b64encode(data).decode('utf-8')
 
 @csrf_exempt
 def view_pet(request, name):
@@ -173,19 +175,25 @@ def view_pet(request, name):
             traffic_df = db_interface.load_bps([pet.name], history_start_time)
             if len(traffic_df[name]) > 0:
                 traffic_info = db_interface.get_mean_traffic(traffic_df)[name]
-                traffic_data_webp = base64.b64encode(db_interface.generate_traffic_plot(traffic_df[name])).decode('utf-8')
+                traffic_data_webp = _convert_bytes_to_base64(db_interface.generate_traffic_plot(traffic_df[name]))
             else:
                 traffic_data_webp = None
                 traffic_info = TrafficStats()
 
             mean_uptime = db_interface.load_availability_mean([pet.name],
                                                             since_timestamp=history_start_time).get(pet.name)
+            up_time_webp = _convert_bytes_to_base64( db_interface.generate_uptime_plot(
+                    pet.name,
+                    since_timestamp=history_start_time))
+
             relationships = db_interface.get_relationship_map([pet.name]).get_relationships(pet.name)
             relationships = {n: m.name for n, m in relationships.items()}
-            up_time_webp = base64.b64encode(
-                db_interface.generate_uptime_plot(
+
+            mean_cpu_stats = db_interface.load_cpu_stats_mean([pet.name],
+                                                         since_timestamp=history_start_time).get(pet.name)
+            cpu_stats_webp =_convert_bytes_to_base64(db_interface.generate_cpu_stats_plot(
                     pet.name,
-                    since_timestamp=history_start_time)).decode('utf-8')
+                    since_timestamp=history_start_time))
 
             if pet.description is not None:
                 substitute_ip = 'IP_UNKNOWN' if device_data.ip is None else device_data.ip
@@ -197,6 +205,8 @@ def view_pet(request, name):
                                                                 'description': description,
                                                                 'device_info': device_data,
                                                                 'mood': pet.mood.name,
+                                                                'mean_cpu_stats': mean_cpu_stats,
+                                                                'cpu_stats_webp': cpu_stats_webp,
                                                                 'relationships': relationships,
                                                                 'traffic_info': traffic_info,
                                                                 'traffic_data_webp': traffic_data_webp,

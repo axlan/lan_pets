@@ -3,7 +3,7 @@ import time
 
 from nmap import PortScannerHostDict
 
-from pet_monitor.common import NetworkInterfaceInfo
+from pet_monitor.common import NetworkInterfaceInfo, TRACE, ExtraNetworkInfoType
 from pet_monitor.network_db import DBInterface
 from pet_monitor.nmap.nmap_interface import NMAPRunner
 from pet_monitor.service_base import ServiceBase
@@ -42,8 +42,12 @@ class NMAPScraper(ServiceBase):
         #                                       'reason': 'arp-response'}},
         if self.nmap_interface.result is not None:
             with DBInterface() as db_interface:
+                _logger.log(TRACE, self.nmap_interface.result)
                 if 'nmap' in self.nmap_interface.result:
-                    _logger.debug(self.nmap_interface.result['nmap'])
+                    info = self.nmap_interface.result['nmap']
+                    if 'command_line' in info and 'scanstats' in info:
+                        _logger.debug(f'"{info["command_line"]}": {info["scanstats"]}')
+                    
 
                 if 'scan' in self.nmap_interface.result:
                     scan: PortScannerHostDict = self.nmap_interface.result['scan']  # type: ignore
@@ -63,13 +67,20 @@ class NMAPScraper(ServiceBase):
                                 name = host_names[0]['name']
                                 if len(name) > 0:
                                     host_name = name
+                        
+                        services = []
+                        if 'tcp' in result:
+                            for port, status in result['tcp'].items():
+                                if status['state'] == 'open':
+                                    services.append(f'{port}({status['name']})')    
+                        extra_info = {} if len(services) == 0 else {ExtraNetworkInfoType.NMAP_SERVICES: ','.join(services)}
 
                         db_interface.add_network_info(NetworkInterfaceInfo(
                             timestamp=timestamp,
                             ip=ip,
                             mac=mac,
                             dns_hostname=host_name
-                        ))
+                        ), extra_info=extra_info)
 
             self.nmap_interface.result = None
 
@@ -82,7 +93,7 @@ class NMAPScraper(ServiceBase):
 
 
 def main():
-    logging.basicConfig(level=logging.DEBUG, format='%(asctime)s - %(levelname)s - %(message)s')
+    logging.basicConfig(level=TRACE, format='%(asctime)s - %(levelname)s - %(message)s')
 
     settings = get_settings()
     if settings.nmap_settings is None:

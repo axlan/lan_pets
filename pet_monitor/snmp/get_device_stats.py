@@ -25,9 +25,8 @@ def _send_packet_get_response(host: str, send_data: bytes) -> Optional[bytes]:
         sock.settimeout(1)  # Set a 1-second timeout
         data, addr = sock.recvfrom(1024)
         return data
-
     except socket.timeout:
-        print("No response received")
+        pass
 
     finally:
         # Close the socket
@@ -66,7 +65,8 @@ def send_requests(host: str, community: str, oids: list[str], use_get_next = Fal
         # Check for SNMP errors reported
         errorStatus = pMod.apiPDU.get_error_status(rspPDU)
         if errorStatus:
-            print(errorStatus.prettyPrint())
+            #print(errorStatus.prettyPrint())
+            pass
         else:
             for oid, val in pMod.apiPDU.get_varbinds(rspPDU):
                 # print('%s = %s' % (oid.prettyPrint(), val.prettyPrint()))
@@ -129,16 +129,40 @@ def get_attached_ips(host: str, community: str) -> list[tuple[str, str]]:
     ]
 
 
-def get_cpu_idle_percent(host: str, community: str) -> int:
+def get_cpu_idle_percent(host: str, community: str) -> Optional[int]:
     # UCD-SNMP-MIB::ssCpuIdle
     base_oid = '1.3.6.1.4.1.2021.11.11.0'
-    response = send_requests(sys.argv[1], sys.argv[2], [base_oid])
+    response = send_requests(host, community, [base_oid])
     # print(response)
     value = response.get(base_oid)
     if value is None:
-        return -1
+        return None
     else:
         return int(value)
+
+
+def get_ram_info(host: str, community: str) -> Optional[tuple[int, int]]:
+    # HOST-RESOURCES-MIB::hrStorageTable
+    BASE_OID = '1.3.6.1.2.1.25.2.3.1'
+    RESOURCE_TYPE_OID = BASE_OID + '.2'
+    results = walk_tree(host, community, RESOURCE_TYPE_OID)
+    for oid, data in results.items():
+        type_oid = str(data)
+        # https://mibs.observium.org/mib/HOST-RESOURCES-TYPES/
+        RAM_RESOURCE_TYPE = '1.3.6.1.2.1.25.2.1.2'
+        if type_oid == RAM_RESOURCE_TYPE:
+            idx = int(oid.split('.')[-1])
+            ALLOCATION_UNITS_OID = BASE_OID + f'.4.{idx}'
+            STORAGE_SIZE_OID = BASE_OID + f'.5.{idx}'
+            STORAGE_USED_OID = BASE_OID + f'.6.{idx}'
+
+            response = send_requests(host, community, [ALLOCATION_UNITS_OID, STORAGE_SIZE_OID, STORAGE_USED_OID])
+            unit_size = int(response[ALLOCATION_UNITS_OID])
+            total = int(response[STORAGE_SIZE_OID]) * unit_size
+            used = int(response[STORAGE_USED_OID]) * unit_size
+            return (used, total)
+
+    return None
 
 
 if __name__ == '__main__':
@@ -147,6 +171,8 @@ if __name__ == '__main__':
     print(get_cpu_idle_percent(sys.argv[1], sys.argv[2]))
 
     print(get_attached_ips(sys.argv[1], sys.argv[2]))
+
+    print(get_ram_info(sys.argv[1], sys.argv[2]))
 
     # import time
     # while True:

@@ -13,6 +13,7 @@ from plotly.subplots import make_subplots
 
 from pet_monitor.common import (
     DATA_DIR,
+    CPUStats,
     NetworkInterfaceInfo,
     PetInfo,
     Relationship,
@@ -36,10 +37,12 @@ CREATE TABLE IF NOT EXISTS network_info (
     mac VARCHAR(17),               -- MAC address (format: XX-XX-XX-XX-XX-XX)
     ip VARCHAR(15),                         -- IP address (format: IPv4). NULL if not available.
     dns_hostname VARCHAR(255),              -- DNS hostname
+    mdns_hostname VARCHAR(255),              -- mDNS hostname
     timestamp INTEGER DEFAULT (strftime('%s', 'now')), -- Unix time last updated
     UNIQUE (mac),                            -- Ensure MAC addresses are unique
     UNIQUE (ip),
     UNIQUE (dns_hostname),
+    UNIQUE (mdns_hostname),
     PRIMARY KEY(row_id)
 );
 '''
@@ -74,6 +77,16 @@ CREATE TABLE IF NOT EXISTS traffic_stats (
     name_id VARCHAR(255) NOT NULL,          -- Name of the device
     rx_bytes INTEGER NOT NULL,              -- Total bytes received
     tx_bytes INTEGER NOT NULL,              -- Total bytes transmitted
+    timestamp INTEGER DEFAULT (strftime('%s', 'now')), -- Unix time last updated
+    FOREIGN KEY(name_id) REFERENCES pet_info(row_id) ON DELETE CASCADE
+);
+'''
+
+CPU_STATS_SCHEMA_SQL = '''\
+CREATE TABLE IF NOT EXISTS cpu_stats (
+    name_id VARCHAR(255) NOT NULL,          -- Name of the device
+    cpu_used_percent INTEGER NOT NULL,      -- 0-100
+    mem_used_percent INTEGER NOT NULL,      -- 0-100
     timestamp INTEGER DEFAULT (strftime('%s', 'now')), -- Unix time last updated
     FOREIGN KEY(name_id) REFERENCES pet_info(row_id) ON DELETE CASCADE
 );
@@ -128,6 +141,7 @@ class DBInterface:
         conn.execute(TRAFFIC_STATS_SCHEMA_SQL)
         conn.execute(AVAILABILITY_SCHEMA_SQL)
         conn.execute(PET_RELATIONSHIPS_SCHEMA_SQL)
+        conn.execute(CPU_STATS_SCHEMA_SQL)
         return conn
 
     def add_pet_info(self, pet: PetInfo):
@@ -194,7 +208,7 @@ class DBInterface:
     def get_extra_network_info(self, interface: NetworkInterfaceInfo) -> dict[ExtraNetworkInfoType, str]:
         results = {}
         cur = self.conn.cursor()
-        UNIQUE_PARAMS = ('ip', 'mac', 'dns_hostname')
+        UNIQUE_PARAMS = ('ip', 'mac', 'dns_hostname', 'mdns_hostname')
         valid_params = tuple(p for p in UNIQUE_PARAMS if interface._asdict()[p])
         check_vals = ' OR '.join(f'{p}=?' for p in valid_params)
         QUERY = f"""
@@ -214,7 +228,7 @@ class DBInterface:
             SELECT row_id, {field_str}
             FROM network_info;"""
         cur.execute(QUERY)
-        UNIQUE_PARAMS = {p: i for i, p in enumerate(('ip', 'mac', 'dns_hostname'))}
+        UNIQUE_PARAMS = {p: i for i, p in enumerate(('ip', 'mac', 'dns_hostname', 'mdns_hostname'))}
         current_interfaces = {r[0]: NetworkInterfaceInfo(*r[1:]) for r in cur.fetchall()}
         duplicates: dict[int, list[str]] = defaultdict(list)
         best_duplicate: Optional[tuple[int, int]] = None
@@ -327,7 +341,7 @@ class DBInterface:
         for name in names:
             cur.execute(
                 """
-                SELECT CAST(SUM(r.is_availabile) AS FLOAT) / COUNT(*) * 100 ConnectedPct
+                SELECT AVG(r.is_availabile) * 100 ConnectedPct
                 FROM device_availability r
                 JOIN pet_info n
                 ON r.name_id = n.row_id
@@ -339,8 +353,10 @@ class DBInterface:
         return availability
 
     def generate_uptime_plot(self, name: str, since_timestamp=0.0,
-                            time_zone='America/Los_Angeles') -> bytes:
+                            time_zone='America/Los_Angeles') -> Optional[bytes]:
         df = self.load_availability([name], since_timestamp)
+        if len(df) == 0:
+            return None
         df = df[(df['name'] == name)]
         df['timestamp'] = pd.to_datetime(df['timestamp'], unit='s', utc=True).dt.tz_convert(time_zone)
 
@@ -368,6 +384,71 @@ class DBInterface:
             result = cur.fetchone()
             availability[name] = 0.0 if result[0] is None else result[0]
         return availability
+
+    def add_cpu_stats_for_pet(self, pet_name: str, cpu_stats: CPUStats):
+        QUERY = """
+                INSERT INTO cpu_stats (name_id, cpu_used_percent, mem_used_percent, timestamp)
+                SELECT pet.row_id, ?, ?, ?
+                FROM
+                    (SELECT row_id from pet_info WHERE name=?) pet;"""
+        self.conn.execute(
+            QUERY, (
+                round(cpu_stats.cpu_used_percent),
+                round(cpu_stats.mem_used_percent),
+                cpu_stats.timestamp,
+                pet_name))
+        self.conn.commit()
+
+    def load_cpu_stats(self, names: Iterable[str], since_timestamp=0.0) -> pd.DataFrame:
+        NAME_STRS = ','.join([f'"{n}"' for n in names])
+        QUERY = f"""
+            SELECT n.name, r.cpu_used_percent, r.mem_used_percent, r.timestamp
+            FROM cpu_stats r
+            JOIN pet_info n
+            ON r.name_id = n.row_id
+            WHERE r.timestamp > {since_timestamp} AND n.name IN ({NAME_STRS});"""
+        return pd.read_sql(QUERY, self.conn)
+
+    def load_cpu_stats_mean(self, names: Iterable[str], since_timestamp=0.0) -> dict[str, CPUStats]:
+        availability = {n: CPUStats() for n in names}
+        cur = self.conn.cursor()
+        for name in names:
+            cur.execute(
+                """
+                SELECT AVG(r.cpu_used_percent) cpu_used_percent, AVG(r.mem_used_percent) mem_used_percent
+                FROM cpu_stats r
+                JOIN pet_info n
+                ON r.name_id = n.row_id
+                WHERE r.timestamp > ? AND n.name=?;""", (since_timestamp, name))
+            result = cur.fetchone()
+            if result[0] is not None:
+                availability[name] = CPUStats(*result)
+
+        return availability
+
+    def generate_cpu_stats_plot(self, name: str, since_timestamp=0.0, sample_rate='1h',
+                            time_zone='America/Los_Angeles') -> Optional[bytes]:
+        df = self.load_cpu_stats([name], since_timestamp)
+        if len(df) == 0:
+            return None
+        df = df[(df['name'] == name)]
+        df.drop(columns=['name'], inplace=True)
+        df['timestamp'] = pd.to_datetime(df['timestamp'], unit='s', utc=True).dt.tz_convert(time_zone)
+        df.set_index('timestamp', inplace=True)
+        df = df.resample(sample_rate).mean()
+        x = df.index
+        y1 = df['cpu_used_percent']
+        y2 = df['mem_used_percent']
+
+        # Add traces
+        fig = go.Figure(go.Scatter(x=x, y=y1, name="CPU%", mode='markers'))
+        fig.add_trace(go.Scatter(x=x, y=y2, name="Memory%", mode='markers'))
+
+        # fig.write_image('/tmp/scraper.png')
+        fd = io.BytesIO()
+        fig.write_image(fd, format='webp')
+        fd.seek(0)
+        return fd.read()
 
     def add_traffic_for_pet(self, pet_name: str, rx_bytes: int,
                             tx_bytes: int, timestamp=int(time.time())):
@@ -432,7 +513,9 @@ class DBInterface:
         return self.get_mean_traffic(pet_bps_set, ignore_zero)
 
     @staticmethod
-    def generate_traffic_plot(df: pd.DataFrame, sample_rate='1h', time_zone='America/Los_Angeles') -> bytes:
+    def generate_traffic_plot(df: pd.DataFrame, sample_rate='1h', time_zone='America/Los_Angeles') -> Optional[bytes]:
+        if len(df) == 0:
+            return None
         df['timestamp'] = pd.to_datetime(df['timestamp'], unit='s', utc=True).dt.tz_convert(time_zone)
         df.set_index('timestamp', inplace=True)
         df = df.resample(sample_rate).mean()
@@ -526,3 +609,6 @@ class DBInterface:
 
     def delete_old_availablity(self, max_age_sec) -> None:
        self._delete_old_entries('device_availability', max_age_sec)
+
+    def delete_old_cpu_stats(self, max_age_sec) -> None:
+       self._delete_old_entries('cpu_stats', max_age_sec)

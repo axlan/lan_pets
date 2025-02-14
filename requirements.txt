@@ -12,3 +12,4 @@ isort
 python-nmap
 pysnmp
 pytest
+zeroconf

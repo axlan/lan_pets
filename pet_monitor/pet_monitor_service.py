@@ -2,17 +2,17 @@
 # TODO: Add concept of plugins for gathering different types of data. This can be enabled on a per device basis.
 
 import logging
-from threading import Condition
 
-from pet_monitor.common import (CONSOLE_LOG_FILE, LoggingTimeFilter)
+from pet_monitor.common import CONSOLE_LOG_FILE, LoggingTimeFilter
+from pet_monitor.mdns_service import MDNSScraper
 from pet_monitor.network_db import DBInterface
-from pet_monitor.service_base import ServiceBase
+from pet_monitor.nmap.nmap_scraper import NMAPScraper
 from pet_monitor.pet_ai import PetAi
 from pet_monitor.ping import Pinger
-from pet_monitor.nmap.nmap_scraper import NMAPScraper
+from pet_monitor.service_base import ServiceBase
+from pet_monitor.settings import get_settings
 from pet_monitor.snmp.snmp_scraper import SNMPScraper
 from pet_monitor.tplink_scraper.scraper import TPLinkScraper
-from pet_monitor.settings import get_settings
 
 _logger = logging.getLogger('pet_monitor.pet_monitor_service')
 
@@ -48,6 +48,9 @@ def main():
 
     if settings.pinger_settings is not None:
         services.append(Pinger(settings.pinger_settings))
+
+    if settings.mdns_settings is not None:
+        services.append(MDNSScraper(settings.mdns_settings))
 
     if settings.pet_ai_settings is not None:
         services.append(PetAi(settings.pet_ai_settings))

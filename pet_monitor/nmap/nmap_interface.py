@@ -37,8 +37,11 @@ class NMAPRunner:
         thread = Thread(target=NMAPRunner._run_nmap_thread, name='nmap_runner', args=(self, hosts, ports, arguments))
         thread.start()
 
-    def scan_ranges(self):
+    def discover_ranges(self):
         self._run_nmap(self.settings.ip_ranges, arguments="-sn")
+
+    def scan_ranges(self):
+        self._run_nmap(self.settings.ip_ranges, arguments="")
 
 
 def _main():

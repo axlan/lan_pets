@@ -145,6 +145,10 @@
         <p>{{device_info.ip}}</p>
         <h2 >Percent Uptime</h2>
         <p>{{mean_uptime|floatformat:"1"}}%</p>
+        <h2 >CPU Usage</h2>
+        <p>{{mean_cpu_stats.cpu_used_percent|floatformat:"1"}}%</p>
+        <h2 >Memory Usage</h2>
+        <p>{{mean_cpu_stats.mem_used_percent|floatformat:"1"}}%</p>
         <h2 >Transmit Rate</h2>
         <p>{{traffic_info.rx_bytes_bps|floatformat:"0"}} (B/s)</p>
         <h2 >Transmit Rate</h2>
@@ -177,6 +181,10 @@
     {% if up_time_webp != None %}
     <h1 style="text-align: center;">Up Time</h1>
     <img src="data:image/png;base64, {{up_time_webp}}" alt="Up Time Plot" />
+    {% endif %}
+    {% if cpu_stats_webp != None %}
+    <h1 style="text-align: center;">CPU Stats</h1>
+    <img src="data:image/png;base64, {{cpu_stats_webp}}" alt="CPU Stats Plot" />
     {% endif %}
     <br>
 

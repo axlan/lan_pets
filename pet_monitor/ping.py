@@ -4,6 +4,7 @@ from typing import Generator, Iterable
 
 from icmplib import ping
 
+from pet_monitor.common import TRACE
 from pet_monitor.network_db import DBInterface
 from pet_monitor.service_base import ServiceBase
 from pet_monitor.settings import PingerSettings, get_settings
@@ -15,10 +16,10 @@ def _check_host(address: str) -> bool:
     try:
         host = ping(address, count=1, timeout=1, privileged=False)
         is_online = host.packets_sent == host.packets_received
-        _logger.debug(f'ping {address} {is_online}')
+        _logger.log(TRACE, f'ping {address} {is_online}')
         return is_online
     except Exception as e:
-        _logger.debug(f'ping {address} {e}')
+        _logger.log(TRACE, f'ping {address} {e}')
         return False
 
 
@@ -49,10 +50,9 @@ class Pinger(ServiceBase):
 
             hosts = set()
             for name, device in pet_device_map.items():
-                if device.ip is not None:
+                host = device.get_host()
+                if host:
                     hosts.add((name, device.ip))
-                elif device.dns_hostname is not None:
-                    hosts.add((name, device.dns_hostname))
 
             # Ideally, don't block on this. Leaving the scope waits for all threads to finish.
             for name, is_online in _ping_in_parallel(hosts):
@@ -61,7 +61,7 @@ class Pinger(ServiceBase):
 
 
 def main():
-    logging.basicConfig(level=logging.DEBUG, format='%(asctime)s - %(levelname)s - %(message)s')
+    logging.basicConfig(level=TRACE, format='%(asctime)s - %(levelname)s - %(message)s')
 
     settings = get_settings()
     if settings.pinger_settings is None:

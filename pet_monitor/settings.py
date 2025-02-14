@@ -82,12 +82,22 @@ class SNMPSettings(NamedTuple):
     router_ip = "192.168.1.1"
     community = 'public'
     time_between_scans = 60.0 * 10.0
+    history_len = MAX_HISTORY_LEN_SEC
+
+
+class MDNSSettings(NamedTuple):
+    '''
+    Parameters for running mDNS queries.
+    '''
+    time_between_updates = 60.0 * 10.0
 
 
 class Settings(NamedTuple):
     # Network discovery sources
     tplink_settings: Optional[TPLinkSettings] = None
+    nmap_settings: Optional[NMAPSettings] = NMAPSettings()
     snmp_settings: Optional[SNMPSettings] = SNMPSettings()
+    mdns_settings: Optional[MDNSSettings] = MDNSSettings()
 
     # List of clients to include even if they aren't discovered
     hard_coded_pet_interfaces: dict[str, NetworkInterfaceInfo] = {
