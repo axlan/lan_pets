@@ -141,6 +141,21 @@ def get_cpu_idle_percent(host: str, community: str) -> Optional[int]:
         return int(value)
 
 
+def get_per_cpu_usage(host: str, community: str) -> list[int]:
+    # HOST-RESOURCES-MIB::hrStorageTable
+    BASE_OID = '1.3.6.1.2.1.25.3.3.1.2'
+    results = walk_tree(host, community, BASE_OID)
+    return [int(d) for d in results.values()]
+
+
+def get_total_cpu_usage(host: str, community: str) -> Optional[float]:
+    cpu_loads = get_per_cpu_usage(host, community)
+    if len(cpu_loads) > 0:
+        return float(sum(cpu_loads)) / float(len(cpu_loads))
+    else:
+        return None
+
+
 def get_ram_info(host: str, community: str) -> Optional[tuple[int, int]]:
     # HOST-RESOURCES-MIB::hrStorageTable
     BASE_OID = '1.3.6.1.2.1.25.2.3.1'
@@ -165,14 +180,31 @@ def get_ram_info(host: str, community: str) -> Optional[tuple[int, int]]:
     return None
 
 
+def get_ram_used_percent(host: str, community: str) -> Optional[float]:
+    # HOST-RESOURCES-MIB::hrStorageTable
+    ram_info = get_ram_info(host, community)
+    if ram_info is None:
+        return None
+    else:
+        return float(ram_info[0]) / float(ram_info[1]) * 100.0
+
+
 if __name__ == '__main__':
     import sys
 
-    print(get_cpu_idle_percent(sys.argv[1], sys.argv[2]))
-
     print(get_attached_ips(sys.argv[1], sys.argv[2]))
 
+    print(get_cpu_idle_percent(sys.argv[1], sys.argv[2]))
+
+    print(get_load_averages(sys.argv[1], sys.argv[2]))
+
+    print(get_per_cpu_usage(sys.argv[1], sys.argv[2]))
+
     print(get_ram_info(sys.argv[1], sys.argv[2]))
+
+    print(get_total_cpu_usage(sys.argv[1], sys.argv[2]))
+
+    print(get_ram_used_percent(sys.argv[1], sys.argv[2]))
 
     # import time
     # while True:

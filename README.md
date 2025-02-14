@@ -75,17 +75,12 @@ When it comes to discovering the presence of devices on the network, there are a
 
 # TODO
 
-Fix hard coded pets (don't show in UI)
-Add button to do full NMAP scan on device and save result for viewing.
 When pihole 6 is released, add integration into pihole API
 Have option to use NMAP for ping?
 Handle case where device has mutliple NIC's
-Add mDNS + bespoke advertisement of device info (avahi-browse / avahi-resolve)
 Add pet conversations
 Chat bubbles for pet conversations
-Identifiers, host, MAC, mDNS?
 Figure out sensors for each device (ping, http, custom, SNMP)
-Any way to better abstract the router info dump?
 Add more stuff to relationship view, like moods as a color with legend
 Add different mood algorithms
 Make relationship logic more involved

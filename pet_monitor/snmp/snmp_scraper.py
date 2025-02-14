@@ -1,11 +1,12 @@
+from collections import defaultdict
 import logging
 import time
 
-from pet_monitor.common import CPUStats, NetworkInterfaceInfo
+from pet_monitor.common import TRACE, CPUStats, NetworkInterfaceInfo
 from pet_monitor.network_db import DBInterface
 from pet_monitor.service_base import ServiceBase
 from pet_monitor.settings import SNMPSettings, get_settings
-from pet_monitor.snmp.get_device_stats import get_attached_ips, get_cpu_idle_percent, get_ram_info
+from pet_monitor.snmp.get_device_stats import get_attached_ips, get_total_cpu_usage, get_ram_used_percent
 
 _logger = logging.getLogger(__name__)
 
@@ -18,11 +19,18 @@ class SNMPScraper(ServiceBase):
     def _update(self):
         try:
             devices = get_attached_ips(self.settings.router_ip, self.settings.community)
+            # Filter devices with multiple IPs.
+            mac_counts:dict[str, int] = defaultdict(int)
+            for device in devices:
+                mac_counts[device[1]] += 1
+            original_len = len(devices)
+            devices = [d for d in devices if mac_counts[d[1]] == 1]
+            _logger.log(TRACE, devices)
         except Exception as e:
             _logger.error(e)
             return False
         
-        _logger.debug(f'Router SNMP found had {len(devices)} clients.')
+        _logger.debug(f'Router SNMP found had {len(devices)} clients with unique IP out of {original_len}.')
 
         with DBInterface() as db_interface:
             # Clear old data.
@@ -35,14 +43,12 @@ class SNMPScraper(ServiceBase):
         for name, device in pet_device_map.items():
             host = device.get_host()
             if host:
-                print(host, self.settings.community)
-                cpu_idle = get_cpu_idle_percent(host, self.settings.community)
-                if cpu_idle is None:
+                cpu_usage = get_total_cpu_usage(host, self.settings.community)
+                if cpu_usage is None:
                     continue
-                mem_usage = get_ram_info(host, self.settings.community)
+                mem_usage = get_ram_used_percent(host, self.settings.community)
                 if mem_usage is not None:
-                    mem_usage_percent = float(mem_usage[0]) / float(mem_usage[1])
-                    cpu_stats[name] = CPUStats(100 - cpu_idle, mem_usage_percent, int(time.time()))
+                    cpu_stats[name] = CPUStats(cpu_usage, mem_usage, int(time.time()))
 
         _logger.debug(f'SNMP found {len(cpu_stats)} devices with cpu stats.')
 
@@ -60,7 +66,7 @@ class SNMPScraper(ServiceBase):
 
 
 def main():
-    logging.basicConfig(level=logging.DEBUG, format='%(asctime)s - %(levelname)s - %(message)s')
+    logging.basicConfig(level=TRACE, format='%(asctime)s - %(levelname)s - %(message)s')
 
     settings = get_settings()
     if settings.snmp_settings is None:

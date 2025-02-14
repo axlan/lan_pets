@@ -100,9 +100,7 @@ class Settings(NamedTuple):
     mdns_settings: Optional[MDNSSettings] = MDNSSettings()
 
     # List of clients to include even if they aren't discovered
-    hard_coded_pet_interfaces: dict[str, NetworkInterfaceInfo] = {
-        'bee': NetworkInterfaceInfo(ip='192.168.1.110')
-    }
+    hard_coded_pet_interfaces: dict[str, NetworkInterfaceInfo] = {}
 
     # How long to sleep between checking services
     main_loop_sleep_sec = 0.1
