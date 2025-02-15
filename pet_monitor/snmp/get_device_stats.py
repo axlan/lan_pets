@@ -4,7 +4,7 @@
 # https://www.oss.com/asn1/resources/asn1-made-simple/asn1-quick-reference/octetstring.html
 
 import socket
-from typing import Any, Optional
+from typing import Any, Iterator, Optional
 
 from pyasn1.codec.ber import encoder, decoder
 from pysnmp.proto import api
@@ -189,6 +189,27 @@ def get_ram_used_percent(host: str, community: str) -> Optional[float]:
         return float(ram_info[0]) / float(ram_info[1]) * 100.0
 
 
+def get_max_if_in_out_bytes(host: str, community: str) -> Optional[tuple[int, int]]:
+    # IF-MIB MIB .1.3.6.1.2.1.2. 
+
+    # RFC1213-MIB::ifTable
+    BASE_OID = '1.3.6.1.2.1.2.2.1'
+    IN_OCTETS_OID = BASE_OID + '.10'
+    OUT_OCTETS_OID = BASE_OID + '.16'
+    in_results = walk_tree(host, community, IN_OCTETS_OID)
+    if len(in_results) == 0:
+        return None
+    out_results = walk_tree(host, community, OUT_OCTETS_OID)
+    if len(in_results) == 0:
+        return None
+
+    def _get_max(vals) -> int:
+        return max(int(m) for m in vals)
+
+    return (_get_max(in_results.values()), _get_max(out_results.values()))
+
+
+
 if __name__ == '__main__':
     import sys
 
@@ -205,6 +226,8 @@ if __name__ == '__main__':
     print(get_total_cpu_usage(sys.argv[1], sys.argv[2]))
 
     print(get_ram_used_percent(sys.argv[1], sys.argv[2]))
+
+    print(get_max_if_in_out_bytes(sys.argv[1], sys.argv[2]))
 
     # import time
     # while True:

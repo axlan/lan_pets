@@ -23,13 +23,17 @@ class TPLinkScraper(ServiceBase):
                 self.settings.router_ip, self.settings.username, self.settings.password)
             clients = tplink.get_dhcp_clients()
             reservations = tplink.get_dhcp_static_reservations()
-            traffic = tplink.get_traffic_stats()
+            if self.settings.collect_traffic_data:
+                traffic = tplink.get_traffic_stats()
+            else:
+                traffic = {}
         except Exception as e:
             _logger.error(e)
             return False
 
         with DBInterface() as db_interface:
-            db_interface.delete_old_traffic_stats(self.settings.update_period_sec)
+            if self.settings.collect_traffic_data:
+                db_interface.delete_old_traffic_stats(self.settings.update_period_sec)
 
             timestamp = int(time.time())
             devices: dict[str, NetworkInterfaceInfo] = {}
@@ -59,10 +63,12 @@ class TPLinkScraper(ServiceBase):
             pet_info = db_interface.get_pet_info()
             pet_device_map = db_interface.get_network_info_for_pets(pet_info)
 
-            for traffic_entry in traffic:
-                for name, interface in pet_device_map.items():
-                    if interface.ip == traffic_entry['addr']:
-                        db_interface.add_traffic_for_pet(name, traffic_entry['rx_bytes'], traffic_entry['tx_bytes'], timestamp)
+            if self.settings.collect_traffic_data:
+                for traffic_entry in traffic:
+                    for name, interface in pet_device_map.items():
+                        if interface.ip == traffic_entry['addr']:
+                            db_interface.add_traffic_for_pet(
+                                name, traffic_entry['rx_bytes'], traffic_entry['tx_bytes'], timestamp)
 
             _logger.debug(
                 f'Scrape Succeeded: reservations={len(reservations)}, clients={len(clients)}, traffic={len(traffic)}')

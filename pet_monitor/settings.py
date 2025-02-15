@@ -62,6 +62,7 @@ class TPLinkSettings(NamedTuple):
     router_ip: str
     username: str
     password: str
+    collect_traffic_data = True
     update_period_sec = 60.0 * 10
     history_len = MAX_HISTORY_LEN_SEC
 
@@ -82,6 +83,7 @@ class SNMPSettings(NamedTuple):
     router_ip = "192.168.1.1"
     community = 'public'
     time_between_scans = 60.0 * 10.0
+    collect_traffic_data = False
     history_len = MAX_HISTORY_LEN_SEC
 
 
