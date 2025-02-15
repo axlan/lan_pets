@@ -127,7 +127,7 @@ def get_settings() -> Settings:
             tplink_settings = secret_settings.tplink_settings
         else:
             _logger.debug("No tplink settings to load.")
-    except ModuleNotFoundError:
+    except (ModuleNotFoundError, ImportError):
         _logger.warning("No secret settings to load.")
 
     return Settings(tplink_settings=tplink_settings)

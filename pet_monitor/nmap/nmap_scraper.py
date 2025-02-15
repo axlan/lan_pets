@@ -47,7 +47,7 @@ class NMAPScraper(ServiceBase):
                     info = self.nmap_interface.result['nmap']
                     if 'command_line' in info and 'scanstats' in info:
                         _logger.debug(f'"{info["command_line"]}": {info["scanstats"]}')
-                    
+
 
                 if 'scan' in self.nmap_interface.result:
                     scan: PortScannerHostDict = self.nmap_interface.result['scan']  # type: ignore
@@ -67,12 +67,12 @@ class NMAPScraper(ServiceBase):
                                 name = host_names[0]['name']
                                 if len(name) > 0:
                                     host_name = name
-                        
+
                         services = []
                         if 'tcp' in result:
                             for port, status in result['tcp'].items():
                                 if status['state'] == 'open':
-                                    services.append(f'{port}({status['name']})')    
+                                    services.append(f'{port}({status['name']})')
                         extra_info = {} if len(services) == 0 else {ExtraNetworkInfoType.NMAP_SERVICES: ','.join(services)}
 
                         db_interface.add_network_info(NetworkInterfaceInfo(
@@ -86,7 +86,7 @@ class NMAPScraper(ServiceBase):
 
     def _update(self):
         if self.nmap_interface.in_progress:
-            _logger.error('Attemtping new scan while previous run has not completed.')
+            _logger.error('Attempting new scan while previous run has not completed.')
             return
 
         self.nmap_interface.scan_ranges()
