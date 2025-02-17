@@ -73,6 +73,7 @@ class NMAPSettings(NamedTuple):
     '''
     ip_ranges = '192.168.1.1-255'
     use_sudo = False
+    nmap_flags = ""
     time_between_scans = 60.0 * 10.0
 
 

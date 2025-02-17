@@ -89,7 +89,7 @@ class NMAPScraper(ServiceBase):
             _logger.error('Attempting new scan while previous run has not completed.')
             return
 
-        self.nmap_interface.scan_ranges()
+        self.nmap_interface.scan_ranges(self.settings.nmap_flags)
 
 
 def main():

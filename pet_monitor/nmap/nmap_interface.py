@@ -40,8 +40,8 @@ class NMAPRunner:
     def discover_ranges(self):
         self._run_nmap(self.settings.ip_ranges, arguments="-sn")
 
-    def scan_ranges(self):
-        self._run_nmap(self.settings.ip_ranges, arguments="")
+    def scan_ranges(self, arguments=""):
+        self._run_nmap(self.settings.ip_ranges, arguments=arguments)
 
 
 def _main():
