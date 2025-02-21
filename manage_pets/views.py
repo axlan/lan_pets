@@ -19,6 +19,7 @@ from pet_monitor.common import (
     IdentifierType,
     ExtraNetworkInfoType,
     PetInfo,
+    Relationship,
     TrafficStats,
     get_device_name,
     get_device_summary,
@@ -115,9 +116,14 @@ def view_relationships(request):
             mac_address = mapped_pets[pet.name].mac
             icons[pet.name] = get_pet_avatar(_STATIC_PATH, pet.device_type.name, pet.name, mac_address).name
 
+        COLOR_MAP = {
+            Relationship.FRIENDS: 'green',
+            Relationship.ENEMY: 'red',
+        }
+
         relationships = db_interface.get_all_relationships()
         pet_data = {(p.name, p.mood.name.lower(), icons[p.name]) for p in pets}
-        relationships = {(r[0], r[1], r[2].name.lower(), ) for r in relationships}
+        relationships = {(r[0], r[1], COLOR_MAP[r[2]], ) for r in relationships}
         return render(request, "manage_pets/view_relationships.html", {'pet_data': pet_data,
                                                                    'relationships': relationships, })
 

@@ -37,7 +37,7 @@
       var edges = new vis.DataSet([
       {% for relationship in relationships %}
         // Label makes graph a bit too crowded. Use color, or hover?
-        { from: "{{relationship.0}}", to: "{{relationship.1}}" },
+        { from: "{{relationship.0}}", to: "{{relationship.1}}", color: "{{relationship.2}}" },
       {% endfor %}
       ]);
 

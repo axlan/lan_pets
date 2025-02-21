@@ -80,14 +80,14 @@ class DeviceType(IntEnum):
 
 
 class Mood(IntEnum):
-    JOLLY = 1
+    JOLLY = 0
+    CALM = 1
     SASSY = 2
-    CALM = 3
-    MODEST = 4
-    DREAMY = 5
-    IMPISH = 6
-    SNEAKY = 7
-    SHY = 8
+    MODEST = 3
+    DREAMY = 4
+    IMPISH = 5
+    SNEAKY = 6
+    SHY = 7
 
 
 class ExtraNetworkInfoType(IntEnum):
@@ -100,6 +100,7 @@ class ExtraNetworkInfoType(IntEnum):
 
 class Relationship(IntEnum):
     FRIENDS = 1
+    ENEMY = 2
 
 
 class PetInfo(NamedTuple):

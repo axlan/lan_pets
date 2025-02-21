@@ -29,6 +29,8 @@ class MoodAlgorithm(Enum):
     RANDOM = auto()
     ## Change based on bandwidth usage and uptime.
     ACTIVITY1 = auto()
+    ## Change based on bandwidth usage, num services, and uptime.
+    ACTIVITY_SERVICES = auto()
 
 
 class PetAISettings(NamedTuple):
@@ -53,7 +55,15 @@ class PetAISettings(NamedTuple):
     prob_make_friend_per_friend_drop = 0.05
     # What is the chance a pet will break up with a friend.
     prob_lose_friend = 0.05
+    # How much more likely to make friends with compatible moods.
+    friend_mood_multiplier = 4.0
 
+    # What is the chance a pet will make a enemy each update.
+    prob_make_enemy = 0.2
+    # How does this percentage go down for each existing enemy a pet has.
+    prob_make_enemy_per_enemy_drop = 0.2
+    # What is the chance a pet will break up with an enemy.
+    prob_lose_enemy = 0.05
 
 class TPLinkSettings(NamedTuple):
     '''

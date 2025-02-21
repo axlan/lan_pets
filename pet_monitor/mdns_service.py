@@ -119,7 +119,7 @@ class MDNSScraper(ServiceBase):
                     db_interface.add_network_info(device, extra_info=extra_info)
                     _logger.log(TRACE, entry)
 
-            _logger.info(f'mDNS found {len(self.listener.entries)} clients.')
+            _logger.debug(f'mDNS found {len(self.listener.entries)} clients.')
             self.listener.entries = {}
 
 
