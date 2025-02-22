@@ -3,7 +3,8 @@ import time
 
 from nmap import PortScannerHostDict
 
-from pet_monitor.common import NetworkInterfaceInfo, TRACE, ExtraNetworkInfoType
+from pet_monitor.common import (TRACE, ExtraNetworkInfoType,
+                                NetworkInterfaceInfo)
 from pet_monitor.network_db import DBInterface
 from pet_monitor.nmap.nmap_interface import NMAPRunner
 from pet_monitor.service_base import ServiceBase
@@ -48,14 +49,14 @@ class NMAPScraper(ServiceBase):
                     if 'command_line' in info and 'scanstats' in info:
                         _logger.debug(f'"{info["command_line"]}": {info["scanstats"]}')
 
-
                 if 'scan' in self.nmap_interface.result:
                     scan: PortScannerHostDict = self.nmap_interface.result['scan']  # type: ignore
                     timestamp = int(time.time())
                     for ip, result in scan.items():
                         mac = None
                         host_name = None
-                        if 'addresses' in result and 'mac' in result['addresses'] and len(result['addresses']['mac']) > 0:
+                        if 'addresses' in result and 'mac' in result['addresses'] and len(
+                                result['addresses']['mac']) > 0:
                             mac = result['addresses']['mac'].replace(':', '-')
 
                         if 'hostnames' in result:
@@ -73,7 +74,8 @@ class NMAPScraper(ServiceBase):
                             for port, status in result['tcp'].items():
                                 if status['state'] == 'open':
                                     services.append(f'{port}({status['name']})')
-                        extra_info = {} if len(services) == 0 else {ExtraNetworkInfoType.NMAP_SERVICES: ','.join(services)}
+                        extra_info = {} if len(services) == 0 else {
+                            ExtraNetworkInfoType.NMAP_SERVICES: ','.join(services)}
 
                         db_interface.add_network_info(NetworkInterfaceInfo(
                             timestamp=timestamp,

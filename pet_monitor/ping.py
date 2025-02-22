@@ -41,23 +41,23 @@ class Pinger(ServiceBase):
         self.settings = settings
 
     def _update(self) -> None:
+        with DBInterface() as db_interface:
+            # Clear old data.
+            db_interface.delete_old_availablity(int(self.settings.history_len))
+
+            pet_info = db_interface.get_pet_info()
+            pet_device_map = db_interface.get_network_info_for_pets(pet_info)
+
+        hosts = set()
+        for name, device in pet_device_map.items():
+            host = device.get_host()
+            if host:
+                hosts.add((name, device.ip))
+
+        # Ideally, don't block on this. Leaving the scope waits for all threads to finish.
+        for name, is_online in _ping_in_parallel(hosts):
             with DBInterface() as db_interface:
-                # Clear old data.
-                db_interface.delete_old_availablity(int(self.settings.history_len))
-
-                pet_info = db_interface.get_pet_info()
-                pet_device_map = db_interface.get_network_info_for_pets(pet_info)
-
-            hosts = set()
-            for name, device in pet_device_map.items():
-                host = device.get_host()
-                if host:
-                    hosts.add((name, device.ip))
-
-            # Ideally, don't block on this. Leaving the scope waits for all threads to finish.
-            for name, is_online in _ping_in_parallel(hosts):
-                with DBInterface() as db_interface:
-                    db_interface.add_pet_availability(name, is_online)
+                db_interface.add_pet_availability(name, is_online)
 
 
 def main():

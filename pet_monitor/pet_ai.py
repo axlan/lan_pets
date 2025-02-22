@@ -4,9 +4,10 @@ from typing import NamedTuple
 
 import numpy as np
 
+from pet_monitor.common import (ExtraNetworkInfoType, Mood, Relationship,
+                                get_cutoff_timestamp)
 from pet_monitor.network_db import DBInterface
 from pet_monitor.service_base import ServiceBase
-from pet_monitor.common import (Mood, Relationship, get_cutoff_timestamp, ExtraNetworkInfoType)
 from pet_monitor.settings import MoodAlgorithm, PetAISettings
 
 _logger = logging.getLogger(__name__)

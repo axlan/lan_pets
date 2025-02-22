@@ -1,9 +1,9 @@
 
-from enum import IntEnum
 import logging
 import re
 import subprocess
 import time
+from enum import IntEnum
 from pathlib import Path
 from typing import Any, Iterable, NamedTuple, Optional, TypeVar
 
@@ -18,6 +18,8 @@ class LoggingTimeFilter(logging.Filter):
 
 
 T = TypeVar('T')
+
+
 def filter_set(input: Iterable[T], field: str, values: Iterable[Any]) -> set[T]:
     return {
         i for i in input if getattr(i, field) in values
@@ -32,7 +34,7 @@ def sizeof_fmt(num, suffix="B"):
     return f"{num:.1f}Yi{suffix}"
 
 
-def get_timestamp_age_str(timestamp: int, now_interval = 0) -> str:
+def get_timestamp_age_str(timestamp: int, now_interval=0) -> str:
     age = int(time.time()) - timestamp
     minute = 60
     hour = minute * 60
@@ -46,15 +48,15 @@ def get_timestamp_age_str(timestamp: int, now_interval = 0) -> str:
     elif age < minute:
         return f'{int(age)} sec'
     elif age < hour:
-        return f'{int(age/minute)} min'
+        return f'{int(age / minute)} min'
     elif age < day:
-        return f'{int(age/hour)} hour'
+        return f'{int(age / hour)} hour'
     elif age < week:
-        return f'{int(age/day)} day'
+        return f'{int(age / day)} day'
     elif age < month:
-        return f'{int(age/week)} week'
+        return f'{int(age / week)} week'
     elif age < year:
-        return f'{int(age/month)} month'
+        return f'{int(age / month)} month'
     elif timestamp != 0:
         return 'year+'
     else:
@@ -128,7 +130,7 @@ class NetworkInterfaceInfo(NamedTuple):
 
     def get_host(self) -> Optional[str]:
         if self.ip is not None:
-            return self.ip 
+            return self.ip
         elif self.dns_hostname is not None:
             return self.dns_hostname
         return None
@@ -262,22 +264,22 @@ def standardize_mac_address(mac: str) -> str:
     # Remove any existing separators
     mac = mac.replace(":", "").replace("-", "").upper()
     # Insert dashes every two characters
-    standardized_mac = '-'.join(mac[i:i+2] for i in range(0, len(mac), 2))
+    standardized_mac = '-'.join(mac[i:i + 2] for i in range(0, len(mac), 2))
     return standardized_mac
 
 
-def get_mac_for_ip_address(ip_address)->Optional[str]:
+def get_mac_for_ip_address(ip_address) -> Optional[str]:
     try:
         arp_result = subprocess.check_output(["arp", "-a", str(ip_address)])
         mac_address_search = re.search(r"([0-9a-fA-F]{2}[:-]){5}([0-9a-fA-F]{2})", arp_result.decode())
         if mac_address_search:
             return standardize_mac_address(mac_address_search.group(0))
     except Exception:
-         pass
+        pass
     return None
 
 
-def get_device_name(device: NetworkInterfaceInfo, extra_info:dict[ExtraNetworkInfoType, str]) -> Optional[str]:
+def get_device_name(device: NetworkInterfaceInfo, extra_info: dict[ExtraNetworkInfoType, str]) -> Optional[str]:
     if ExtraNetworkInfoType.DHCP_NAME in extra_info:
         return extra_info[ExtraNetworkInfoType.DHCP_NAME]
     elif ExtraNetworkInfoType.MDNS_NAME in extra_info:
@@ -290,7 +292,7 @@ def get_device_name(device: NetworkInterfaceInfo, extra_info:dict[ExtraNetworkIn
     return None
 
 
-def get_device_summary(extra_info:dict[ExtraNetworkInfoType, str]) -> Optional[str]:
+def get_device_summary(extra_info: dict[ExtraNetworkInfoType, str]) -> Optional[str]:
     if ExtraNetworkInfoType.ROUTER_DESCRIPTION in extra_info:
         return extra_info[ExtraNetworkInfoType.ROUTER_DESCRIPTION]
     elif ExtraNetworkInfoType.MDNS_SERVICES in extra_info:
@@ -299,5 +301,6 @@ def get_device_summary(extra_info:dict[ExtraNetworkInfoType, str]) -> Optional[s
         return 'Supports: ' + extra_info[ExtraNetworkInfoType.NMAP_SERVICES]
 
     return None
+
 
 TRACE = logging.DEBUG - 1

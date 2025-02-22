@@ -11,21 +11,11 @@ import plotly.graph_objects as go
 import plotly_express as px
 from plotly.subplots import make_subplots
 
-from pet_monitor.common import (
-    DATA_DIR,
-    CPUStats,
-    NetworkInterfaceInfo,
-    PetInfo,
-    Relationship,
-    RelationshipMap,
-    TrafficStats,
-    IdentifierType,
-    Mood,
-    DeviceType,
-    ExtraNetworkInfoType,
-    get_cutoff_timestamp,
-    map_pets_to_devices,
-)
+from pet_monitor.common import (DATA_DIR, CPUStats, DeviceType,
+                                ExtraNetworkInfoType, IdentifierType, Mood,
+                                NetworkInterfaceInfo, PetInfo, Relationship,
+                                RelationshipMap, TrafficStats,
+                                get_cutoff_timestamp, map_pets_to_devices)
 
 _DB_PATH = DATA_DIR / 'lan_pets_db.sqlite3'
 
@@ -129,7 +119,7 @@ class DBInterface:
     @staticmethod
     def _replace_pet_enums(pet: PetInfo):
         return pet._replace(identifier_type=IdentifierType(pet.identifier_type),
-                   device_type=DeviceType(pet.device_type), mood=Mood(pet.mood))
+                            device_type=DeviceType(pet.device_type), mood=Mood(pet.mood))
 
     @classmethod
     def _get_db_connection(cls, db_path: StrOrBytesPath = _DB_PATH) -> sqlite3.Connection:
@@ -192,7 +182,7 @@ class DBInterface:
         cur.execute(QUERY, (name,))
         cols = cur.fetchone()
         if cols is not None:
-            return  self._replace_pet_enums(PetInfo(*cols))
+            return self._replace_pet_enums(PetInfo(*cols))
 
     @staticmethod
     def _set_extra_network_info(cur: sqlite3.Cursor, row_id: int, extra_info: dict[ExtraNetworkInfoType, str]):
@@ -221,7 +211,8 @@ class DBInterface:
             results[ExtraNetworkInfoType(row[0])] = row[1]
         return results
 
-    def add_network_info(self, new_interface: NetworkInterfaceInfo, extra_info: Optional[dict[ExtraNetworkInfoType, str]]=None):
+    def add_network_info(self, new_interface: NetworkInterfaceInfo,
+                         extra_info: Optional[dict[ExtraNetworkInfoType, str]] = None):
         cur = self.conn.cursor()
         field_str = ','.join(NetworkInterfaceInfo._fields)
         QUERY = f"""
@@ -249,7 +240,7 @@ class DBInterface:
                     continue
                 else:
                     has_valid_fields = any(current_interfaces[row_id]._asdict()[p]
-                                        and p not in duplicate_params for p in UNIQUE_PARAMS)
+                                           and p not in duplicate_params for p in UNIQUE_PARAMS)
                     if has_valid_fields:
                         updates = ','.join(f'{k}=NULL' for k in duplicate_params)
                         QUERY = f"""
@@ -353,7 +344,7 @@ class DBInterface:
         return availability
 
     def generate_uptime_plot(self, name: str, since_timestamp=0.0,
-                            time_zone='America/Los_Angeles') -> Optional[bytes]:
+                             time_zone='America/Los_Angeles') -> Optional[bytes]:
         df = self.load_availability([name], since_timestamp)
         if len(df) == 0:
             return None
@@ -427,7 +418,7 @@ class DBInterface:
         return availability
 
     def generate_cpu_stats_plot(self, name: str, since_timestamp=0.0, sample_rate='1h',
-                            time_zone='America/Los_Angeles') -> Optional[bytes]:
+                                time_zone='America/Los_Angeles') -> Optional[bytes]:
         df = self.load_cpu_stats([name], since_timestamp)
         if len(df) == 0:
             return None
@@ -608,7 +599,7 @@ class DBInterface:
         self._delete_old_entries('traffic_stats', max_age_sec)
 
     def delete_old_availablity(self, max_age_sec) -> None:
-       self._delete_old_entries('device_availability', max_age_sec)
+        self._delete_old_entries('device_availability', max_age_sec)
 
     def delete_old_cpu_stats(self, max_age_sec) -> None:
-       self._delete_old_entries('cpu_stats', max_age_sec)
+        self._delete_old_entries('cpu_stats', max_age_sec)

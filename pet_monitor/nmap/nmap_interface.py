@@ -17,6 +17,7 @@ class NMAPRunner:
     XML output. It specifically does not use the PortScannerAsync class to call nmap asynchronously do to the way that
     class spawns a seperate process for each host being scanned which is better handled by a single nmap process.
     '''
+
     def __init__(self, settings: NMAPSettings) -> None:
         self.settings = settings
         self.in_progress = False

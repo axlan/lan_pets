@@ -36,10 +36,10 @@ def main():
     DBInterface.set_hard_coded_pet_interfaces(settings.hard_coded_pet_interfaces)
 
     services: list[ServiceBase] = []
-    
+
     if settings.tplink_settings is not None:
         services.append(TPLinkScraper(settings.tplink_settings))
-        
+
     if settings.nmap_settings is not None:
         services.append(NMAPScraper(settings.nmap_settings))
 

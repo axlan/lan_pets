@@ -1,9 +1,8 @@
 import logging
 import random
 import time
-from typing import Optional
-
 from threading import Condition, Thread
+from typing import Optional
 
 _logger = logging.getLogger(__name__)
 
@@ -39,17 +38,17 @@ class ServiceBase:
             self.thread.start()
 
     def _run_loop(self) -> None:
-            try:
-                while self.is_running:
-                    self._check()
-                    if not self._rate_limiter.get_ready():
-                        time.sleep(0.1)
-                        continue
-                    self._update()
-            except Exception:
-                _logger.error('Unhandled Exception:', exc_info=True)
-            with self.error_condition:
-                self.error_condition.notify()
+        try:
+            while self.is_running:
+                self._check()
+                if not self._rate_limiter.get_ready():
+                    time.sleep(0.1)
+                    continue
+                self._update()
+        except Exception:
+            _logger.error('Unhandled Exception:', exc_info=True)
+        with self.error_condition:
+            self.error_condition.notify()
 
     def _check(self) -> None:
         pass

@@ -25,11 +25,11 @@ class MoodAlgorithm(Enum):
     '''
     Algorithm to use for checking what mood each pet is.
     '''
-    ## Change at random
+    # Change at random
     RANDOM = auto()
-    ## Change based on bandwidth usage and uptime.
+    # Change based on bandwidth usage and uptime.
     ACTIVITY1 = auto()
-    ## Change based on bandwidth usage, num services, and uptime.
+    # Change based on bandwidth usage, num services, and uptime.
     ACTIVITY_SERVICES = auto()
 
 
@@ -64,6 +64,7 @@ class PetAISettings(NamedTuple):
     prob_make_enemy_per_enemy_drop = 0.2
     # What is the chance a pet will break up with an enemy.
     prob_lose_enemy = 0.05
+
 
 class TPLinkSettings(NamedTuple):
     '''
@@ -123,7 +124,7 @@ class Settings(NamedTuple):
     # Time window to draw in plots.
     plot_data_window_sec = MAX_HISTORY_LEN_SEC
 
-    pinger_settings:Optional[PingerSettings] = PingerSettings()
+    pinger_settings: Optional[PingerSettings] = PingerSettings()
     pet_ai_settings = PetAISettings()
 
 

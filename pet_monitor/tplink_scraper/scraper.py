@@ -1,9 +1,9 @@
-from collections import defaultdict
 import logging
 import time
 import urllib.parse
+from collections import defaultdict
 
-from pet_monitor.common import NetworkInterfaceInfo, ExtraNetworkInfoType
+from pet_monitor.common import ExtraNetworkInfoType, NetworkInterfaceInfo
 from pet_monitor.network_db import DBInterface
 from pet_monitor.service_base import ServiceBase
 from pet_monitor.settings import TPLinkSettings, get_settings

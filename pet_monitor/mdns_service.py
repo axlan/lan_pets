@@ -2,24 +2,15 @@ import logging
 import threading
 from typing import NamedTuple, Optional
 
-from zeroconf import (
-    IPVersion,
-    ServiceBrowser,
-    ServiceListener,
-    Zeroconf,
-    ZeroconfServiceTypes,
-)
+from zeroconf import (IPVersion, ServiceBrowser, ServiceListener, Zeroconf,
+                      ZeroconfServiceTypes)
 
-from pet_monitor.common import (
-    TRACE,
-    ExtraNetworkInfoType,
-    NetworkInterfaceInfo,
-    get_mac_for_ip_address,
-    standardize_mac_address,
-)
+from pet_monitor.common import (TRACE, ExtraNetworkInfoType,
+                                NetworkInterfaceInfo, get_mac_for_ip_address,
+                                standardize_mac_address)
 from pet_monitor.network_db import DBInterface
 from pet_monitor.service_base import ServiceBase
-from pet_monitor.settings import MDNSSettings, PingerSettings, get_settings
+from pet_monitor.settings import MDNSSettings, get_settings
 
 _logger = logging.getLogger(__name__)
 
@@ -82,7 +73,7 @@ class MyListener(ServiceListener):
                 services=services
             )
 
-            #_logger.info(self.entries[mdns_host])
+            # _logger.info(self.entries[mdns_host])
 
     def update_service(self, zc: Zeroconf, type_: str, name: str) -> None:
         self._handle_service(zc, type_, name)

@@ -1,15 +1,8 @@
 import json
 
-from pet_monitor.common import (
-    DeviceType,
-    IdentifierType,
-    Mood,
-    NetworkInterfaceInfo,
-    PetInfo,
-    Relationship,
-    TrafficStats,
-    ExtraNetworkInfoType
-)
+from pet_monitor.common import (DeviceType, ExtraNetworkInfoType,
+                                IdentifierType, Mood, NetworkInterfaceInfo,
+                                PetInfo, Relationship, TrafficStats)
 from pet_monitor.network_db import DBInterface
 
 
@@ -25,6 +18,7 @@ def test_db_enter():
 
 TEST_PETS = set(PetInfo(f'pet{i}', IdentifierType.MAC, '', DeviceType.GAMES) for i in range(5))
 PET_NAMES = set(p.name for p in TEST_PETS)
+
 
 def test_add_pet():
     conn = DBInterface(":memory:")
@@ -66,6 +60,7 @@ def test_delete_pet():
     loaded_pets = conn.get_pet_info()
     assert loaded_pets == TEST_PETS
 
+
 def test_set_mood():
     NAME = 'pet1'
     conn = DBInterface(":memory:")
@@ -78,7 +73,8 @@ def test_set_mood():
 
 TEST_INTERFACES = tuple((NetworkInterfaceInfo(mac=f'mac{i}', ip=f'ip{i}', dns_hostname=f'dns{i}')) for i in range(3))
 TEST_EXTRA_INFO = tuple({ExtraNetworkInfoType.DHCP_NAME: f'pet{i}'} for i in range(3))
-TEST_INTERFACE_INFO = tuple((i, e) for i,e in zip(TEST_INTERFACES, TEST_EXTRA_INFO))
+TEST_INTERFACE_INFO = tuple((i, e) for i, e in zip(TEST_INTERFACES, TEST_EXTRA_INFO))
+
 
 def test_add_interface():
     conn = DBInterface(":memory:")
@@ -163,7 +159,7 @@ def test_delete_overlapped_interface():
 def test_insert_invalid_pet_stats():
     conn = DBInterface(":memory:")
     NAME = 'pet1'
-    
+
     conn.add_traffic_for_pet(NAME, 0, 0, 0)
 
     traffic_df = conn._load_traffic_df(PET_NAMES, 0)
@@ -180,7 +176,7 @@ def test_insert_stats():
     assert len(bps_df[NAME]) == 0
     mean_stats = conn.get_mean_traffic(bps_df)
     assert len(mean_stats) == len(PET_NAMES)
-    assert mean_stats[NAME] == TrafficStats() 
+    assert mean_stats[NAME] == TrafficStats()
 
     for pet in TEST_PETS:
         conn.add_pet_info(pet)

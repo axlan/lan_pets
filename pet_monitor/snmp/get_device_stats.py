@@ -4,9 +4,9 @@
 # https://www.oss.com/asn1/resources/asn1-made-simple/asn1-quick-reference/octetstring.html
 
 import socket
-from typing import Any, Iterator, Optional
+from typing import Any, Optional
 
-from pyasn1.codec.ber import encoder, decoder
+from pyasn1.codec.ber import decoder, encoder
 from pysnmp.proto import api
 
 
@@ -35,7 +35,7 @@ def _send_packet_get_response(host: str, send_data: bytes) -> Optional[bytes]:
     return None
 
 
-def send_requests(host: str, community: str, oids: list[str], use_get_next = False) -> dict[str, Any]:
+def send_requests(host: str, community: str, oids: list[str], use_get_next=False) -> dict[str, Any]:
     results = {} if use_get_next else {oid: None for oid in oids}
 
     # Protocol version to use
@@ -57,7 +57,7 @@ def send_requests(host: str, community: str, oids: list[str], use_get_next = Fal
 
     resp_data = _send_packet_get_response(host, encoder.encode(reqMsg))
 
-    if resp_data is not None:    
+    if resp_data is not None:
         rspMsg, wholeMsg = decoder.decode(resp_data, asn1Spec=pMod.Message())
         rspPDU = pMod.apiMessage.get_pdu(rspMsg)
         # print(rspMsg)
@@ -65,7 +65,7 @@ def send_requests(host: str, community: str, oids: list[str], use_get_next = Fal
         # Check for SNMP errors reported
         errorStatus = pMod.apiPDU.get_error_status(rspPDU)
         if errorStatus:
-            #print(errorStatus.prettyPrint())
+            # print(errorStatus.prettyPrint())
             pass
         else:
             for oid, val in pMod.apiPDU.get_varbinds(rspPDU):
@@ -110,7 +110,7 @@ def get_load_averages(host: str, community: str) -> tuple[float, float, float]:
             results.append(float('NaN'))
         else:
             results.append(float(value))
-    return tuple(results) # type: ignore
+    return tuple(results)  # type: ignore
 
 
 def get_attached_ips(host: str, community: str) -> list[tuple[str, str]]:
@@ -125,7 +125,7 @@ def get_attached_ips(host: str, community: str) -> list[tuple[str, str]]:
         (
             '.'.join(oid.split('.')[11:]),
             '-'.join([f'{x:02X}' for x in bytes(mac_data)])
-         ) for  oid, mac_data in results.items()
+        ) for oid, mac_data in results.items()
     ]
 
 
@@ -190,7 +190,7 @@ def get_ram_used_percent(host: str, community: str) -> Optional[float]:
 
 
 def get_max_if_in_out_bytes(host: str, community: str) -> Optional[tuple[int, int]]:
-    # IF-MIB MIB .1.3.6.1.2.1.2. 
+    # IF-MIB MIB .1.3.6.1.2.1.2.
 
     # RFC1213-MIB::ifTable
     BASE_OID = '1.3.6.1.2.1.2.2.1'
@@ -207,7 +207,6 @@ def get_max_if_in_out_bytes(host: str, community: str) -> Optional[tuple[int, in
         return max(int(m) for m in vals)
 
     return (_get_max(in_results.values()), _get_max(out_results.values()))
-
 
 
 if __name__ == '__main__':

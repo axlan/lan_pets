@@ -124,7 +124,7 @@ class AvatarGen:
         combined_image.save(out_file)
 
 
-def get_pet_avatar(out_dir: Path, device_type: str, name:str, mac_address: Optional[str]) -> Path:
+def get_pet_avatar(out_dir: Path, device_type: str, name: str, mac_address: Optional[str]) -> Path:
     avatar_file = device_type + '-' + name + '.png'
     avatar_path = out_dir / avatar_file
     if avatar_path.exists():

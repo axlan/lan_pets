@@ -1,12 +1,16 @@
-from collections import defaultdict
 import logging
 import time
+from collections import defaultdict
 
-from pet_monitor.common import TRACE, CPUStats, NetworkInterfaceInfo, TrafficStats
+from pet_monitor.common import (TRACE, CPUStats, NetworkInterfaceInfo,
+                                TrafficStats)
 from pet_monitor.network_db import DBInterface
 from pet_monitor.service_base import ServiceBase
 from pet_monitor.settings import SNMPSettings, get_settings
-from pet_monitor.snmp.get_device_stats import get_attached_ips, get_total_cpu_usage, get_ram_used_percent, get_max_if_in_out_bytes
+from pet_monitor.snmp.get_device_stats import (get_attached_ips,
+                                               get_max_if_in_out_bytes,
+                                               get_ram_used_percent,
+                                               get_total_cpu_usage)
 
 _logger = logging.getLogger(__name__)
 

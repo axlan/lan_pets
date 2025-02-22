@@ -13,21 +13,12 @@ from django.shortcuts import redirect, render
 from django.views.decorators.csrf import csrf_exempt
 
 from avatar_gen.generate_avatar import get_pet_avatar
-from pet_monitor.common import (
-    CONSOLE_LOG_FILE,
-    DeviceType,
-    IdentifierType,
-    ExtraNetworkInfoType,
-    PetInfo,
-    Relationship,
-    TrafficStats,
-    get_device_name,
-    get_device_summary,
-    get_timestamp_age_str,
-    map_pets_to_devices,
-    sizeof_fmt,
-    get_cutoff_timestamp
-)
+from pet_monitor.common import (CONSOLE_LOG_FILE, DeviceType,
+                                ExtraNetworkInfoType, IdentifierType, PetInfo,
+                                Relationship, TrafficStats,
+                                get_cutoff_timestamp, get_device_name,
+                                get_device_summary, get_timestamp_age_str,
+                                map_pets_to_devices, sizeof_fmt)
 from pet_monitor.network_db import DBInterface
 from pet_monitor.settings import get_settings
 
@@ -104,7 +95,7 @@ def manage_pets(request):
         router_rows = ',\n'.join(rows)
 
         return render(request, "manage_pets/manage_pets.html",
-                    {'friend_rows': friend_rows, "router_results_exist": True, "router_rows": router_rows})
+                      {'friend_rows': friend_rows, "router_results_exist": True, "router_rows": router_rows})
 
 
 def view_relationships(request):
@@ -125,7 +116,7 @@ def view_relationships(request):
         pet_data = {(p.name, p.mood.name.lower(), icons[p.name]) for p in pets}
         relationships = {(r[0], r[1], COLOR_MAP[r[2]], ) for r in relationships}
         return render(request, "manage_pets/view_relationships.html", {'pet_data': pet_data,
-                                                                   'relationships': relationships, })
+                                                                       'relationships': relationships, })
 
 
 def view_data_usage(request):
@@ -164,8 +155,10 @@ def view_data_usage(request):
 
         return render(request, "manage_pets/view_data_usage.html", {'pet_data': pet_data})
 
+
 def _convert_bytes_to_base64(data: Optional[bytes]) -> Optional[str]:
     return None if data is None else base64.b64encode(data).decode('utf-8')
+
 
 @csrf_exempt
 def view_pet(request, name):
@@ -187,20 +180,20 @@ def view_pet(request, name):
                 traffic_info = TrafficStats()
 
             mean_uptime = db_interface.load_availability_mean([pet.name],
-                                                            since_timestamp=history_start_time).get(pet.name)
-            up_time_webp = _convert_bytes_to_base64( db_interface.generate_uptime_plot(
-                    pet.name,
-                    since_timestamp=history_start_time))
+                                                              since_timestamp=history_start_time).get(pet.name)
+            up_time_webp = _convert_bytes_to_base64(db_interface.generate_uptime_plot(
+                pet.name,
+                since_timestamp=history_start_time))
 
             relationships = db_interface.get_relationship_map([pet.name]).get_relationships(pet.name)
             relationships = {n: m.name for n, m in relationships.items()}
 
             mean_cpu_stats = db_interface.load_cpu_stats_mean([pet.name],
-                                                         since_timestamp=history_start_time).get(pet.name)
-            cpu_stats_webp =_convert_bytes_to_base64(db_interface.generate_cpu_stats_plot(
-                    pet.name,
-                    since_timestamp=history_start_time))
-            
+                                                              since_timestamp=history_start_time).get(pet.name)
+            cpu_stats_webp = _convert_bytes_to_base64(db_interface.generate_cpu_stats_plot(
+                pet.name,
+                since_timestamp=history_start_time))
+
             extra_info = db_interface.get_extra_network_info(device_data)
             if ExtraNetworkInfoType.MDNS_SERVICES in extra_info:
                 services = extra_info[ExtraNetworkInfoType.MDNS_SERVICES].split(',')
@@ -216,18 +209,18 @@ def view_pet(request, name):
                 description = None
 
             return render(request, "manage_pets/view_pet.html", {'pet_data': pet,
-                                                                'description': description,
-                                                                'device_info': device_data,
-                                                                'mood': pet.mood.name,
-                                                                'services': services,
-                                                                'mean_cpu_stats': mean_cpu_stats,
-                                                                'cpu_stats_webp': cpu_stats_webp,
-                                                                'relationships': relationships,
-                                                                'traffic_info': traffic_info,
-                                                                'traffic_data_webp': traffic_data_webp,
-                                                                'mean_uptime': mean_uptime,
-                                                                'up_time_webp': up_time_webp,
-                                                                'avatar_path': avatar_path.name, })
+                                                                 'description': description,
+                                                                 'device_info': device_data,
+                                                                 'mood': pet.mood.name,
+                                                                 'services': services,
+                                                                 'mean_cpu_stats': mean_cpu_stats,
+                                                                 'cpu_stats_webp': cpu_stats_webp,
+                                                                 'relationships': relationships,
+                                                                 'traffic_info': traffic_info,
+                                                                 'traffic_data_webp': traffic_data_webp,
+                                                                 'mean_uptime': mean_uptime,
+                                                                 'up_time_webp': up_time_webp,
+                                                                 'avatar_path': avatar_path.name, })
 
 
 @csrf_exempt
