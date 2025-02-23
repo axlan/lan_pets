@@ -275,7 +275,9 @@ class DBInterface:
     def get_network_info_for_pets(self, pets: Iterable[PetInfo]) -> dict[str, NetworkInterfaceInfo]:
         return {**self._hard_coded_pet_interfaces, **map_pets_to_devices(self.get_network_info(), pets)}
 
-    def add_pet_availability(self, pet_name: str, is_available: bool, timestamp=int(time.time())):
+    def add_pet_availability(self, pet_name: str, is_available: bool, timestamp: Optional[int] = None):
+        if timestamp is None:
+            timestamp = int(time.time())
         QUERY = """
                 INSERT INTO device_availability (name_id, is_availabile, timestamp)
                 SELECT pet.row_id, ?, ?
@@ -442,7 +444,9 @@ class DBInterface:
         return fd.read()
 
     def add_traffic_for_pet(self, pet_name: str, rx_bytes: int,
-                            tx_bytes: int, timestamp=int(time.time())):
+                            tx_bytes: int, timestamp: Optional[int] = None):
+        if timestamp is None:
+            timestamp = int(time.time())
         QUERY = """
                 INSERT INTO traffic_stats (name_id, rx_bytes, tx_bytes, timestamp)
                 SELECT pet.row_id, ?, ?, ?

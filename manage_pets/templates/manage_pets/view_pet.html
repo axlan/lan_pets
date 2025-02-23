@@ -4,15 +4,15 @@
 
 <head>
   <title>{{pet_data.name}}</title>
-  <link rel="shortcut icon" type="image/png" href="{% static 'favicon.ico' %}"/>
+  <link rel="shortcut icon" type="image/png" href="{% static 'favicon.ico' %}" />
 
   <link href='https://fonts.googleapis.com/css?family=Silkscreen' rel='stylesheet'>
   <style>
     body {
       font-family: 'Silkscreen';
       font-size: large;
-      background-color: #1e1e1e;
-      color: #ffffff;
+      background-color: #ffebcd;
+      color: #4b0082;
       text-align: center;
     }
 
@@ -24,16 +24,16 @@
     }
 
     .section {
-      border: 2px solid #32a1ce;
+      border: 2px solid #ff69b4;
       border-radius: 10px;
       margin: 10px;
       padding: 20px;
       width: 22%;
-      background-color: #2e2e2e;
+      background-color: #ffe4e1;
     }
 
     .section h2 {
-      color: #32a1ce;
+      color: #ff69b4;
     }
 
     .section p {
@@ -47,9 +47,9 @@
     }
 
     .button {
-      border: 2px solid #32a1ce;
-      background-color: #2e2e2e;
-      color: #32a1ce;
+      border: 2px solid #ff69b4;
+      background-color: #ffe4e1;
+      color: #ff69b4;
       padding: 10px 20px;
       margin: 10px;
       border-radius: 10px;
@@ -58,12 +58,12 @@
     }
 
     .button:hover {
-      background-color: #32a1ce;
+      background-color: #ff69b4;
       color: #ffffff;
     }
 
     .link {
-      color: #32a1ce;
+      color: #ff69b4;
       text-decoration: none;
       font-size: large;
     }
@@ -83,8 +83,8 @@
 <body>
   {% include "./header.html" with nav="view_pet" %}
   <h1>{{pet_data.name}}</h1>
-  
-  <img src="{% static avatar_path %}" height="20%" style="display: inline-block;">
+
+  <img src="{% static avatar_path %}" height="20%" style="display: inline-block;" onclick="this.requestFullscreen()" >
 
   <div class="container">
     <div class="section">
@@ -104,18 +104,18 @@
       <h2>Relationships</h2>
       <ul>
         {% for name, relationship in relationships.items %}
-          <p><a class="link" href="/view_pet/{{name}}">{{name}} - {{relationship}}</a></p>
+        <p><a class="link" href="/view_pet/{{name}}">{{name}} - {{relationship}}</a></p>
         {% endfor %}
       </ul>
       <h2>Services</h2>
       {% for service in services %}
-        <p>{{service}}</p>
+      <p>{{service}}</p>
       {% endfor %}
     </div>
 
     <div class="section">
       <h2>Description</h2>
-      <div style="border:1px solid #32a1ce; padding: 10px;">
+      <div style="border:1px solid #ff69b4; padding: 10px;">
         {% autoescape off %}
         {{description}}
         {% endautoescape %}
@@ -128,15 +128,15 @@
     <div class="section">
       {% if traffic_data_webp != None %}
       <h2>Traffic</h2>
-        <img src="data:image/png;base64, {{traffic_data_webp}}" alt="Traffic Data Plot" />
+      <img src="data:image/png;base64, {{traffic_data_webp}}" alt="Traffic Data Plot" onclick="this.requestFullscreen()" />
       {% endif %}
       {% if up_time_webp != None %}
       <h2>Up Time</h2>
-        <img src="data:image/png;base64, {{up_time_webp}}" alt="Up Time Plot" />
+      <img src="data:image/png;base64, {{up_time_webp}}" alt="Up Time Plot" onclick="this.requestFullscreen()" />
       {% endif %}
       {% if cpu_stats_webp != None %}
       <h2>CPU Stats</h2>
-        <img src="data:image/png;base64, {{cpu_stats_webp}}" alt="CPU Stats Plot" />
+      <img src="data:image/png;base64, {{cpu_stats_webp}}" alt="CPU Stats Plot" onclick="this.requestFullscreen()" />
       {% endif %}
     </div>
   </div>
