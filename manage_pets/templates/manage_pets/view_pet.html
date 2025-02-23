@@ -10,193 +10,142 @@
   <style>
     body {
       font-family: 'Silkscreen';
-      font-size: xx-large;
-    }
-
-    .table {
-      display: table;
-      border-collapse: collapse;
-      width: 100%;
-    }
-
-    .th {
-      display: table-row;
-      font-weight: bold;
-      background-color: lavender;
-      border: 5px solid pink;
-      height: 100px;
-    }
-
-    .tr {
-      display: table-row;
-      height: 100px;
-    }
-
-    .td {
-      display: table-cell;
-      vertical-align: middle;
-    }
-
-    .choices {
-      width: 200px;
-      font-family: 'Silkscreen';
-      margin: 20px;
-      border: 5px solid black;
-    }
-
-    .choices__inner {
-      padding: 0px;
-    }
-
-    .choices__item {
-      font-family: 'Silkscreen';
-      font-size: xx-large;
+      font-size: large;
+      background-color: #1e1e1e;
+      color: #ffffff;
       text-align: center;
-      color: black;
     }
 
-    .selectable_row:hover {
-      cursor: pointer;
-      color: rgb(255, 32, 80);
-    }
-
-    input[type='text'],
-    input[type='submit'],
-    input[type='button'] {
-      font-size: xx-large;
-      width: 400px;
-      font-family: 'Silkscreen';
-      margin: 20px;
-      border: 5px solid black;
-    }
-
-    input[type='radio'] {
-      height: 30px;
-      width: 30px;
+    .container {
+      display: flex;
+      flex-wrap: wrap;
+      justify-content: center;
       margin: 20px;
     }
 
-    label {
-      vertical-align: middle;
+    .section {
+      border: 2px solid #32a1ce;
+      border-radius: 10px;
+      margin: 10px;
+      padding: 20px;
+      width: 22%;
+      background-color: #2e2e2e;
     }
 
-    input::placeholder {
-      font-family: 'Silkscreen';
+    .section h2 {
+      color: #32a1ce;
     }
 
-    option {
-      font-family: 'Silkscreen';
-      font-size: 20px;
+    .section p {
+      margin: 5px 0;
+    }
+
+    .section img {
+      max-width: 100%;
+      height: auto;
+      border-radius: 10px;
     }
 
     .button {
-      border: 5px dashed pink;
-      background-color: lavender;
-      text-align: center;
-      height: 100px;
+      border: 2px solid #32a1ce;
+      background-color: #2e2e2e;
+      color: #32a1ce;
+      padding: 10px 20px;
+      margin: 10px;
+      border-radius: 10px;
+      cursor: pointer;
+      font-size: large;
     }
 
     .button:hover {
-      background-color: rgb(177, 50, 111);
-      cursor: pointer;
-      color: white;
+      background-color: #32a1ce;
+      color: #ffffff;
     }
 
-    #modal {
-      position: fixed;
-      display: none;
-      z-index: 1;
-      top: 0;
-      height: 100%;
-      width: 100%;
-      background-color: #ffc4f8d3;
+    .link {
+      color: #32a1ce;
+      text-decoration: none;
+      font-size: large;
     }
 
-    #modal #content {
-      display: block;
-      position: relative;
-      width: 300px;
-      margin-top: 100px;
-      margin-left: auto;
-      margin-right: auto;
+    .link:hover {
+      text-decoration: underline;
     }
   </style>
 </head>
 
 <script>
   function onDelete() {
-    if (confirm("Are you sure you want to delete {{pet_data.name}}?")) {
-      // User clicked OK
-      // Perform the action here
-    } else {
-      // User clicked Cancel
-      // Do nothing or perform an alternate action
-    }
+    return confirm("Are you sure you want to delete {{pet_data.name}}?");
   }
 </script>
 
 <body>
   {% include "./header.html" with nav="view_pet" %}
-    <h1 style="text-align: center;">{{pet_data.name}}</h1>
-    <div style="border: thick double #32a1ce;float:left;">
-        <h2 >MAC</h2>
-        <p>{{device_info.mac}}</p>
-        <h2 >IP</h2>
-        <p>{{device_info.ip}}</p>
-        <h2 >Percent Uptime</h2>
-        <p>{{mean_uptime|floatformat:"1"}}%</p>
-        <h2 >CPU Usage</h2>
-        <p>{{mean_cpu_stats.cpu_used_percent|floatformat:"1"}}%</p>
-        <h2 >Memory Usage</h2>
-        <p>{{mean_cpu_stats.mem_used_percent|floatformat:"1"}}%</p>
-        <h2 >Transmit Rate</h2>
-        <p>{{traffic_info.rx_bytes_bps|floatformat:"0"}} (B/s)</p>
-        <h2 >Transmit Rate</h2>
-        <p>{{traffic_info.tx_bytes_bps|floatformat:"0"}} (B/s)</p>
+  <h1>{{pet_data.name}}</h1>
+  
+  <img src="{% static avatar_path %}" height="20%" style="display: inline-block;">
+
+  <div class="container">
+    <div class="section">
+      <h2>Device Info</h2>
+      <p><strong>MAC:</strong> {{device_info.mac}}</p>
+      <p><strong>IP:</strong> {{device_info.ip}}</p>
+      <p><strong>Percent Uptime:</strong> {{mean_uptime|floatformat:"1"}}%</p>
+      <p><strong>CPU Usage:</strong> {{mean_cpu_stats.cpu_used_percent|floatformat:"1"}}%</p>
+      <p><strong>Memory Usage:</strong> {{mean_cpu_stats.mem_used_percent|floatformat:"1"}}%</p>
+      <p><strong>Transmit Rate:</strong> {{traffic_info.rx_bytes_bps|floatformat:"0"}} B/s</p>
+      <p><strong>Receive Rate:</strong> {{traffic_info.tx_bytes_bps|floatformat:"0"}} B/s</p>
     </div>
 
-    <img src="{% static avatar_path %}" width="50%" height="50%" style="display: inline-block;">
-
-    <div style="border: thick double #32a1ce;float:right;">
-        <h2 >Mood</h2>
-        <p>{{mood}}</p>
-        <h2 >Relationships</h2>
+    <div class="section">
+      <h2>Mood</h2>
+      <p>{{mood}}</p>
+      <h2>Relationships</h2>
+      <ul>
         {% for name, relationship in relationships.items %}
-          <li><a href="/view_pet/{{name}}">{{name}} - {{relationship}}</a></li>
+          <p><a class="link" href="/view_pet/{{name}}">{{name}} - {{relationship}}</a></p>
         {% endfor %}
-        <h2>Services</h2>
-        {% for service in services %}
+      </ul>
+      <h2>Services</h2>
+      {% for service in services %}
         <p>{{service}}</p>
-        {% endfor %}
+      {% endfor %}
     </div>
-    <h1 style="text-align: center;">Description</h1>
-    <div style="border:1px solid black;">
-    {% autoescape off %}
-    {{description}}
-    {% endautoescape %}
+
+    <div class="section">
+      <h2>Description</h2>
+      <div style="border:1px solid #32a1ce; padding: 10px;">
+        {% autoescape off %}
+        {{description}}
+        {% endautoescape %}
+      </div>
+      <form action="/edit_pet/{{pet_data.name}}">
+        <input class="button" type="submit" value="Edit Description">
+      </form>
     </div>
-    <form action="/edit_pet/{{pet_data.name}}">
-      <input type="submit" value="Edit Description">
-    </form>
-    {% if traffic_data_webp != None %}
-    <h1 style="text-align: center;">Traffic</h1>
-    <img src="data:image/png;base64, {{traffic_data_webp}}" alt="Traffic Data Plot" />
-    {% endif %}
-    {% if up_time_webp != None %}
-    <h1 style="text-align: center;">Up Time</h1>
-    <img src="data:image/png;base64, {{up_time_webp}}" alt="Up Time Plot" />
-    {% endif %}
-    {% if cpu_stats_webp != None %}
-    <h1 style="text-align: center;">CPU Stats</h1>
-    <img src="data:image/png;base64, {{cpu_stats_webp}}" alt="CPU Stats Plot" />
-    {% endif %}
-    <br>
 
-    <a href="/view_history/{{pet_data.name}}">View History</a>
+    <div class="section">
+      {% if traffic_data_webp != None %}
+      <h2>Traffic</h2>
+        <img src="data:image/png;base64, {{traffic_data_webp}}" alt="Traffic Data Plot" />
+      {% endif %}
+      {% if up_time_webp != None %}
+      <h2>Up Time</h2>
+        <img src="data:image/png;base64, {{up_time_webp}}" alt="Up Time Plot" />
+      {% endif %}
+      {% if cpu_stats_webp != None %}
+      <h2>CPU Stats</h2>
+        <img src="data:image/png;base64, {{cpu_stats_webp}}" alt="CPU Stats Plot" />
+      {% endif %}
+    </div>
+  </div>
 
-    <form action="/delete_pet/{{pet_data.name}}" method="post" onSubmit="return onDelete()">
-      <input type="submit" value="Delete">
-    </form>
+  <a class="link" href="/view_history/{{pet_data.name}}">View History</a>
+
+  <form action="/delete_pet/{{pet_data.name}}" method="post" onSubmit="return onDelete()">
+    <input class="button" type="submit" value="Delete">
+  </form>
 </body>
 
 </html>
