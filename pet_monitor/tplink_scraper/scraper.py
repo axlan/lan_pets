@@ -33,7 +33,7 @@ class TPLinkScraper(ServiceBase):
 
         with DBInterface() as db_interface:
             if self.settings.collect_traffic_data:
-                db_interface.delete_old_traffic_stats(self.settings.update_period_sec)
+                db_interface.delete_old_traffic_stats(self.settings.history_len)
 
             timestamp = int(time.time())
             devices: dict[str, NetworkInterfaceInfo] = {}
