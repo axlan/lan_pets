@@ -4,10 +4,22 @@ Combines the fun of being a sysadmin with the fun of virtual pets!
 
 Shows the status of the local network while also using the information to generate the virtual pets and their interactions.
 
+For a more in depth write up of the design and developement see the blog post:
+
+<https://www.robopenguins.com/lan-pets/>
+
 There are two server applications that make up this project:
 
 1. [pet_monitor/pet_monitor_service.py](pet_monitor/pet_monitor_service.py) - This server gathers information about the computers on the network and saves it to SQLite databases.
 2. lan_pets Django app - This runs a web server to act as a GUI for virtual pet interface.
+
+![image](docs/manage_pets_thumb.webp)
+
+![image](docs/view_pet_thumb.webp)
+
+![image](docs/relationships_thumb.webp)
+
+![image](docs/data_usage_thumb.webp)
 
 # Usage
 
@@ -84,8 +96,9 @@ Adding a pet involves accociating a network identifier with a unique name for th
 
 The pet will be accociated with results that match the giving identifier. Host name can be resolved from DNS, or mDNS.
 
+One aspect of this display is randomly generating an avatar image for the each pet.
+
 # TODO
- - Check on data usage
  - When pihole 6 is released, add integration into pihole API
  - Have option to use NMAP for ping?
  - Handle case where device has mutliple NIC's
