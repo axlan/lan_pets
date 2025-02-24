@@ -188,6 +188,13 @@ class NetworkInterfaceInfo(NamedTuple):
         return results
 
 
+def strip_mdns_domain(host:str)->str:
+    host = host.strip('.')
+    if host.endswith('.local'):
+        host = host[:-6]
+    return host
+
+
 def map_pets_to_devices(devices: Iterable[NetworkInterfaceInfo],
                         pets: Iterable[PetInfo]) -> dict[str, NetworkInterfaceInfo]:
     matches: dict[str, NetworkInterfaceInfo] = {}
@@ -199,8 +206,11 @@ def map_pets_to_devices(devices: Iterable[NetworkInterfaceInfo],
         }[pet.identifier_type]
         matches[pet.name] = NetworkInterfaceInfo(**{field_name: pet.identifier_value})  # type: ignore
         for device in devices:
-            mdns_match = pet.identifier_type is IdentifierType.HOST and device.mdns_hostname == pet.identifier_value
-            if mdns_match or getattr(device, field_name) == pet.identifier_value:
+            mdns_match = pet.identifier_type is IdentifierType.HOST and device.mdns_hostname and strip_mdns_domain(
+                device.mdns_hostname) == strip_mdns_domain(pet.identifier_value)
+            dns_match = pet.identifier_type is IdentifierType.HOST and device.dns_hostname and device.dns_hostname.casefold(
+            ) == pet.identifier_value.casefold()
+            if mdns_match or dns_match or getattr(device, field_name) == pet.identifier_value:
                 matches[pet.name] = device
                 break
     return matches

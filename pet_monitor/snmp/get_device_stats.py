@@ -25,7 +25,7 @@ def _send_packet_get_response(host: str, send_data: bytes) -> Optional[bytes]:
         sock.settimeout(1)  # Set a 1-second timeout
         data, addr = sock.recvfrom(1024)
         return data
-    except socket.timeout:
+    except (socket.timeout, socket.gaierror):
         pass
 
     finally:
