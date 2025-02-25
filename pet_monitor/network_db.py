@@ -497,8 +497,8 @@ class DBInterface:
                 bps_col = f'{col}_bps'
                 diffs = pet_df[bps_col]
                 valid_diffs = diffs > 0 if ignore_zero else True
-                metrics[bps_col] = (diffs[valid_diffs] / durations[valid_diffs]).mean()  # type: ignore
-                metrics[col] = diffs[valid_diffs].sum()
+                metrics[bps_col] = diffs[valid_diffs].mean()  # type: ignore
+                metrics[col] = (diffs[valid_diffs] * durations[valid_diffs]).sum() # type: ignore
             results[name] = TrafficStats(**metrics)
         return results
 
