@@ -263,7 +263,7 @@ def edit_pet(request, name):
         if pet is not None:
             if request.method == "POST":
                 description = request.POST.get('pet-description')
-                pet._replace(description=description)
+                pet = pet._replace(description=description)
                 db_interface.add_pet_info(pet)
                 return redirect("/view_pet/" + name)
             else:
