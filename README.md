@@ -98,6 +98,12 @@ The pet will be accociated with results that match the giving identifier. Host n
 
 One aspect of this display is randomly generating an avatar image for the each pet.
 
+These images were taken from <https://picrew.me/en/>:
+ - https://picrew.me/en/image_maker/489160
+ - https://picrew.me/en/image_maker/1250938
+ - https://picrew.me/en/image_maker/1028528
+ - https://picrew.me/en/image_maker/2529042
+
 # TODO
  - When pihole 6 is released, add integration into pihole API
  - Have option to use NMAP for ping?
