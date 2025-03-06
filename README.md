@@ -4,6 +4,10 @@ Combines the fun of being a sysadmin with the fun of virtual pets!
 
 Shows the status of the local network while also using the information to generate the virtual pets and their interactions.
 
+Demo:
+
+<https://www.youtube.com/watch?v=y5ohQJp2h14>
+
 For a more in depth write up of the design and developement see the blog post:
 
 <https://www.robopenguins.com/lan-pets/>
