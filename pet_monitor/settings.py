@@ -41,7 +41,7 @@ class PetAISettings(NamedTuple):
     update_period_sec = 60.0 * 60.0
 
     # Which mood algorithm to use.
-    mood_algorithm = MoodAlgorithm.ACTIVITY1
+    mood_algorithm = MoodAlgorithm.ACTIVITY_SERVICES
     # How long a window of data should be used for determining moods.
     history_window_sec = update_period_sec
     # Above what uptime percentage is considered "available"
